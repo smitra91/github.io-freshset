@@ -424,6 +424,11 @@ a.srow:active{background:var(--panel2)}
 .dact:active{opacity:.82}
 .dact.quiet{color:var(--ink3);font-weight:600}
 .dact.danger{border-color:var(--hot);color:var(--hot)}
+
+.pillrow.four{flex-wrap:wrap}
+.pillrow.four .pill{flex:1 0 46%}
+.lvnote{margin:9px 2px 0;font-size:13px;line-height:1.45;color:var(--ink3)}
+.notice.soft{background:var(--bg2);border-color:var(--line2)}
 </style>
 </head>
 <body>
@@ -1281,14 +1286,43 @@ function allocate(ordered){
   return map;
 }
 
-var LEVEL_BIAS = {
-  any:  {Beginner:0,  Intermediate:0,  Advanced:0},
-  inter:{Beginner:-3, Intermediate:1.5,Advanced:1.5},
-  adv:  {Beginner:-7, Intermediate:-1, Advanced:4.5}
+var LEVELS = [["beg","Beginner"],["int","Intermediate"],["adv","Advanced"],["any","Mixed"]];
+
+/* which difficulties a level will actually accept */
+var LEVEL_ALLOW = {
+  beg:{Beginner:1,Intermediate:1},
+  int:{Intermediate:1,Beginner:1},
+  adv:{Advanced:1,Intermediate:1},
+  any:{Beginner:1,Intermediate:1,Advanced:1}
 };
+/* and which it prefers within that */
+var LEVEL_BIAS = {
+  beg:{Beginner:4.5,Intermediate:0},
+  int:{Intermediate:4,Beginner:0.5},
+  adv:{Advanced:5,Intermediate:0},
+  any:{Beginner:0,Intermediate:0,Advanced:0}
+};
+var LEVEL_NOTE = {
+  beg:"Machines, dumbbells and bodyweight, with technique that is quick to learn. Nothing needing a spotter or heavy bracing.",
+  int:"Free-weight compounds and the standard variations. Assumes you are comfortable under a barbell.",
+  adv:"Loaded stretch work, unilateral and eccentric variations, Olympic-style lifts. Assumes solid technique and a real training base.",
+  any:"The whole library mixed together, from beginner-friendly to hard."
+};
+function levelName(l){
+  for(var i=0;i<LEVELS.length;i++) if(LEVELS[i][0]===l) return LEVELS[i][1];
+  return "Mixed";
+}
+/* keep the level if the pool allows it, otherwise say so rather than pretend */
+function levelFilter(cands, level, report){
+  var allow = LEVEL_ALLOW[level] || LEVEL_ALLOW.any;
+  var ok = cands.filter(function(e){ return allow[e.diff] });
+  if(ok.length) return ok;
+  if(report) report.off++;
+  return cands;
+}
 
 /* pick exercises for a list of {g, role} slots, keeping variety global */
-function selectSlots(slots, avoid, level){
+function selectSlots(slots, avoid, level, report){
   var bias = LEVEL_BIAS[level]||LEVEL_BIAS.any;
   var chosen=[], usedEquip={}, usedPattern={}, taken={};
   var rank = {C:0,c:1,a:2,i:3,t:4,x:5};
@@ -1304,6 +1338,7 @@ function selectSlots(slots, avoid, level){
       cands = fresh.filter(function(e){return e.role===tiers[t]});
     if(!cands.length) cands = fresh;
     if(!cands.length) return;
+    cands = levelFilter(cands, level, report);
 
     var pats={}; pool.forEach(function(e){pats[e.pattern]=1});
     var patPen = Object.keys(pats).length<=5 ? 1.6 : 4.5;
@@ -1339,7 +1374,8 @@ function buildMulti(sel, level, finisher, avoidExtra){
     TEMPLATES[g].slice(0,counts[g]).forEach(function(r){ slots.push({g:g,role:r}) });
   });
 
-  var picks = selectSlots(slots, avoid, level);
+  var report = {off:0};
+  var picks = selectSlots(slots, avoid, level, report);
 
   /* display order: finish one muscle before starting the next, compounds first */
   var rank={C:0,c:1,a:2,i:3,t:4};
@@ -1352,7 +1388,7 @@ function buildMulti(sel, level, finisher, avoidExtra){
 
   if(finisher){
     var cpool = LIB.cardio.filter(function(e){return e.role==="x"});
-    var fin = prescribe(pickOne(cpool));
+    var fin = prescribe(pickOne(levelFilter(cpool, level, null)));
     fin.dur = 60*(8+rnd(3)); fin.lockSets = true; fin.finisher = true;
     relabel(fin); main.push(fin);
   }
@@ -1365,7 +1401,7 @@ function buildMulti(sel, level, finisher, avoidExtra){
   var open = pickOne(WARMUP.general.slice(0,4));
   var wb = buildBlock(warm.concat(WARMUP.general.slice(4)), 540-open[2], 640-open[2]);
   var ses = {
-    group: ordered[0], groups: ordered, mode:"multi", level:level, finisher:!!finisher,
+    group: ordered[0], groups: ordered, mode:"multi", level:level, finisher:!!finisher, offLevel:report.off,
     warm: [{name:open[0],pattern:open[1],dur:open[2],note:open[3]}].concat(wb),
     main: main,
     cool: buildBlock(cool.concat(COOLDOWN.general), 520, 620),
@@ -1484,7 +1520,7 @@ function relabel(it){
 }
 
 /* ---------- selection ---------- */
-function selectExercises(group,avoid,count,level){
+function selectExercises(group,avoid,count,level,report){
   var lb = (typeof LEVEL_BIAS!=="undefined" ? LEVEL_BIAS[level||"any"] : null) || {};
   var pool = LIB[group];
   var tpl  = TEMPLATES[group].slice(0,count);
@@ -1503,6 +1539,7 @@ function selectExercises(group,avoid,count,level){
     }
     if(!cands.length) cands = fresh.filter(function(e){return chosen.indexOf(e)<0});
     if(!cands.length) return;
+    if(typeof levelFilter==="function") cands = levelFilter(cands, level||"any", report);
     var best=null,bestScore=-1e9;
     shuffle(cands).forEach(function(e){
       var s = Math.random()*3 + (lb[e.diff]||0);
@@ -1639,12 +1676,13 @@ function buildSession(group, avoidIds){
             : (Math.random()<0.45 ? 5 : 6);
 
   var warm = buildWarmup(group), cool = buildCooldown(group);
-  var picks = selectExercises(group, avoid, count, S.level);
+  var report = {off:0};
+  var picks = selectExercises(group, avoid, count, S.level, report);
 
   var ses = {
     group:group, style:style.id, styleName:style.name, styleDesc:style.desc,
     warm:warm, main:picks.map(prescribe), cool:cool,
-    created:Date.now(), saved:false
+    level:S.level, offLevel:report.off, created:Date.now(), saved:false
   };
   applyStyle(ses);
   var target = Math.max(62*60, Math.min(73*60, 5400 - warmTime(warm) - warmTime(cool)));
@@ -1672,6 +1710,8 @@ function swapOne(idx){
   }
   if(!cands.length) cands = LIB[g].filter(function(e){return inSession.indexOf(e.id)<0});
   if(!cands.length) return null;
+  var lvReport = {off:0};
+  if(typeof levelFilter==="function") cands = levelFilter(cands, S.level||"any", lvReport);
 
   var others = ses.main.filter(function(i,k){return k!==idx}).map(function(i){return byId(i.g,i.id)});
   var best=null,bs=-1e9;
@@ -1691,7 +1731,9 @@ function swapOne(idx){
   applyStyle(ses);
   finalTags(ses);
   var after = totalTime(ses);
-  return {name:best.name, delta:after-before, total:after};
+  if(lvReport.off) ses.offLevel = (ses.offLevel||0)+1;
+  return {name:best.name, delta:after-before, total:after,
+          offLevel:lvReport.off>0, diff:best.diff};
 }
 
 /* ============================================================
@@ -1744,7 +1786,8 @@ function adopt(d){
   if(!d) return;
   S.theme=d.theme||S.theme; S.group=d.group||S.group;
   S.session=d.session||S.session; S.history=d.history||{}; S.logs=d.logs||{};
-  S.mode=d.mode||S.mode; S.sel=d.sel||S.sel; S.level=d.level||S.level;
+  S.mode=d.mode||S.mode; S.sel=d.sel||S.sel;
+  S.level=(d.level==='inter'?'int':d.level)||S.level;
   S.finisher=!!d.finisher; S.bf=d.bf||S.bf;
 }
 
@@ -1846,10 +1889,10 @@ function renderNav(){
 }
 
 function levelRow(){
-  var opts=[["any","All levels"],["inter","Intermediate +"],["adv","Advanced only"]];
-  return '<div class="pillrow">'+opts.map(function(o){
-    return '<button class="pill'+(S.level===o[0]?" on":"")+'" data-act="level" data-l="'+o[0]+'">'+o[1]+'</button>';
-  }).join("")+'</div>';
+  return '<div class="pillrow four">'+LEVELS.map(function(o){
+      return '<button class="pill'+(S.level===o[0]?" on":"")+'" data-act="level" data-l="'+o[0]+'">'+o[1]+'</button>';
+    }).join("")+'</div>'
+    + '<p class="lvnote">'+LEVEL_NOTE[S.level]+'</p>';
 }
 
 function renderPicker(){
@@ -1976,8 +2019,9 @@ function renderSession(){
   var off = Math.abs(tot-5400) > 6*60;
   var title = (ses.groups||[ses.group]).map(function(g){return SHORT[g]}).join(" + ");
 
+  var lvtag = (ses.level && ses.level!=="any") ? ' \u00b7 '+levelName(ses.level) : '';
   body += '<div class="meta">'
-    + '<div class="stat'+(off?" warn":"")+'"><div class="v">'+mins(tot)+' min</div><div class="k">'+title+'</div></div>'
+    + '<div class="stat'+(off?" warn":"")+'"><div class="v">'+mins(tot)+' min</div><div class="k">'+title+lvtag+'</div></div>'
     + '<div class="stat"><div class="v">'+doneN+' / '+ses.main.length+'</div><div class="k">exercises done</div>'
     +   '<div class="bar"><i style="width:'+pct+'%"></i></div></div>'
     + '</div>';
@@ -1985,6 +2029,10 @@ function renderSession(){
   if(notice) body += '<div class="notice"><span>'+notice+'</span><button data-act="closenote" aria-label="Dismiss">\u00d7</button></div>';
 
   body += '<div class="stylecard"><b>'+ses.styleName+'</b><p>'+ses.styleDesc+'</p></div>';
+  if(ses.offLevel)
+    body += '<div class="notice soft"><span>'+ses.offLevel+' exercise'+(ses.offLevel===1?" sits":"s sit")
+      + ' outside '+levelName(ses.level).toLowerCase()+' level \u2014 the library ran out of options at that level for '
+      + (ses.offLevel===1?'that slot':'those slots')+'. Check the difficulty tag on each card.</span></div>';
 
   if(ses.groups && ses.groups.length>1){
     var adv = advise(ses.groups, ses.finisher);
@@ -2188,7 +2236,8 @@ document.addEventListener("click",function(e){
     var r = swapOne(i);
     if(r){
       var t=totalTime(ses);
-      notice = "Swapped in " + r.name + ". "
+      notice = "Swapped in " + r.name
+        + (r.offLevel ? " (" + r.diff.toLowerCase() + " \u2014 nothing left at your level for this slot)" : "") + ". "
         + (Math.abs(t-5400)>6*60
             ? "The session is now about " + mins(t) + " minutes \u2014 adjust sets if that does not fit."
             : "Session still runs about " + mins(t) + " minutes.");
