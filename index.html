@@ -1,0 +1,2273 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d151d">
+<title>Session — gym workout builder</title>
+<style>*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#0d151d; --bg2:#121d28; --panel:#16222f; --panel2:#1c2b3a;
+  --line:#26374a; --line2:#31465d;
+  --ink:#e9f0f7; --ink2:#a8bacd; --ink3:#75899e;
+  --beg:#4fb477; --int:#f0b429; --adv:#e0503f;
+  --hot:#f2634a; --go:#4fb477; --key:#ffd166;
+  --shadow:0 12px 28px rgba(0,0,0,.45);
+  --r:14px;
+  --tap:52px;
+  color-scheme:dark;
+}
+[data-theme="light"]{
+  --bg:#eef1f5; --bg2:#e4e9ef; --panel:#ffffff; --panel2:#f3f6f9;
+  --line:#d3dbe4; --line2:#c0cbd8;
+  --ink:#15202b; --ink2:#4a5c6e; --ink3:#6b7d90;
+  --hot:#d1402a; --go:#2f8f57; --key:#a97400;
+  --shadow:0 10px 24px rgba(20,35,50,.13);
+  color-scheme:light;
+}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:ui-sans-serif,-apple-system,"SF Pro Text","Segoe UI Variable Text","Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px; line-height:1.45;
+  font-variant-numeric:tabular-nums;
+  -webkit-text-size-adjust:100%;
+  padding-bottom:150px;
+  overscroll-behavior-y:none;
+}
+.wrap{max-width:640px;margin:0 auto;padding:0 14px}
+h1,h2,h3{margin:0;font-weight:650;letter-spacing:-.015em}
+button{font:inherit;color:inherit;font-variant-numeric:tabular-nums}
+:focus-visible{outline:3px solid var(--key);outline-offset:2px;border-radius:8px}
+
+/* ---------- header ---------- */
+header.top{
+  position:sticky;top:0;z-index:40;
+  background:linear-gradient(180deg,var(--bg) 72%,transparent);
+  padding:14px 0 10px;
+}
+.topbar{display:flex;align-items:center;gap:12px}
+.mark{display:flex;align-items:baseline;gap:9px;flex:1;min-width:0}
+.mark b{font-size:21px;font-weight:700;letter-spacing:-.02em}
+.mark span{font-size:13px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{
+  width:var(--tap);height:var(--tap);flex:0 0 auto;border-radius:13px;
+  background:var(--panel);border:1px solid var(--line);
+  display:grid;place-items:center;cursor:pointer;
+}
+.iconbtn:active{background:var(--panel2)}
+
+/* ---------- picker ---------- */
+.picker{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px;margin-bottom:14px;box-shadow:var(--shadow);
+}
+.picker label{display:block;font-size:14px;color:var(--ink2);margin-bottom:9px}
+.selrow{display:flex;gap:10px}
+.sel{
+  position:relative;flex:1;
+}
+select{
+  -webkit-appearance:none;appearance:none;width:100%;
+  height:60px;padding:0 44px 0 16px;
+  background:var(--panel2);color:var(--ink);
+  border:1px solid var(--line2);border-radius:12px;
+  font-size:18px;font-weight:600;letter-spacing:-.01em;
+}
+.sel::after{
+  content:"";position:absolute;right:18px;top:50%;width:11px;height:11px;
+  border-right:2.5px solid var(--ink2);border-bottom:2.5px solid var(--ink2);
+  transform:translateY(-70%) rotate(45deg);pointer-events:none;
+}
+.build{
+  height:60px;padding:0 20px;border-radius:12px;border:none;cursor:pointer;
+  background:var(--ink);color:var(--bg);font-weight:700;font-size:16px;
+}
+.build:active{opacity:.82}
+
+/* ---------- session meta ---------- */
+.meta{
+  display:flex;gap:10px;margin-bottom:14px;
+}
+.stat{
+  flex:1;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--r);padding:11px 13px;min-width:0;
+}
+.stat .v{font-size:23px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.stat .k{font-size:12.5px;color:var(--ink3);margin-top:2px}
+.stat.warn{border-color:var(--hot)}
+.stat.warn .v{color:var(--hot)}
+.bar{height:7px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;background:var(--go);width:0;transition:width .3s ease}
+
+.stylecard{
+  background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--key);
+  border-radius:var(--r);padding:12px 14px;margin-bottom:16px;
+}
+.stylecard b{font-size:15.5px}
+.stylecard p{margin:3px 0 0;font-size:14px;color:var(--ink2)}
+
+.notice{
+  background:rgba(242,99,74,.12);border:1px solid var(--hot);color:var(--ink);
+  border-radius:12px;padding:11px 13px;margin-bottom:14px;font-size:14.5px;
+  display:flex;gap:9px;align-items:flex-start;
+}
+.notice button{background:none;border:none;color:var(--ink3);cursor:pointer;padding:0 2px;font-size:19px;line-height:1}
+
+/* ---------- sections ---------- */
+.sechead{
+  display:flex;align-items:center;gap:10px;
+  margin:22px 2px 11px;
+}
+.sechead h2{font-size:15px;letter-spacing:.01em;color:var(--ink)}
+.sechead .dur{margin-left:auto;font-size:13.5px;color:var(--ink3)}
+.rule{flex:0 0 26px;height:3px;border-radius:2px;background:var(--line2)}
+
+.simple{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.srow{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;
+  border-top:1px solid var(--line);min-height:56px;
+}
+.srow:first-child{border-top:none}
+.srow .sv{flex:0 0 46px;height:46px;background:var(--panel2);border-radius:10px;display:grid;place-items:center;overflow:hidden}
+.srow .sv svg{width:100%;height:100%}
+.srow .nm{flex:1;font-size:15.5px;font-weight:560;min-width:0}
+.srow .nm em{display:block;font-style:normal;font-size:13px;color:var(--ink3);font-weight:400;margin-top:1px}
+.srow .tm{font-size:14px;color:var(--ink2);font-weight:600;white-space:nowrap}
+
+/* ---------- exercise card ---------- */
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  margin-bottom:12px;overflow:hidden;
+}
+.card.done{border-color:var(--go)}
+.card.done .cname{color:var(--ink3);text-decoration:line-through;text-decoration-thickness:1.5px}
+.chead{display:flex;gap:12px;padding:13px 13px 0}
+.slot{
+  flex:0 0 30px;height:30px;border-radius:9px;background:var(--panel2);
+  color:var(--ink2);font-size:14px;font-weight:700;display:grid;place-items:center;
+}
+.card.done .slot{background:var(--go);color:#06210f}
+.ctitle{flex:1;min-width:0}
+.cname{font-size:19px;font-weight:680;letter-spacing:-.02em;line-height:1.22;margin:1px 0 0}
+.tag{
+  display:inline-block;margin-top:7px;font-size:12px;font-weight:700;
+  padding:3px 8px;border-radius:6px;background:var(--panel2);color:var(--ink2);
+}
+.tag.style{background:rgba(255,209,102,.16);color:var(--key)}
+.swap{
+  flex:0 0 var(--tap);height:var(--tap);margin-top:-8px;border-radius:13px;
+  background:transparent;border:1px solid var(--line);display:grid;place-items:center;cursor:pointer;
+}
+.swap:active{background:var(--panel2)}
+
+.cbody{display:flex;gap:12px;padding:11px 13px 0;align-items:flex-start}
+.viz{
+  flex:0 0 116px;height:96px;background:var(--bg2);border:1px solid var(--line);
+  border-radius:11px;overflow:hidden;
+}
+.viz svg{width:100%;height:100%;display:block}
+.pres{flex:1;min-width:0}
+.big{font-size:25px;font-weight:730;letter-spacing:-.03em;line-height:1.1}
+.big small{font-size:14px;font-weight:600;color:var(--ink3);letter-spacing:0}
+.sub{font-size:14px;color:var(--ink2);margin-top:5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.chip{
+  font-size:12.5px;padding:4px 9px;border-radius:7px;
+  background:var(--panel2);border:1px solid var(--line);color:var(--ink2);white-space:nowrap;
+}
+.chip.d{border-color:transparent;font-weight:700;color:#0d151d}
+.chip.d.Beginner{background:var(--beg)}
+.chip.d.Intermediate{background:var(--int)}
+.chip.d.Advanced{background:var(--adv);color:#fff}
+[data-theme="light"] .chip.d.Beginner,[data-theme="light"] .chip.d.Intermediate{color:#12202c}
+
+.cues{margin:11px 13px 0;padding:11px 12px;background:var(--bg2);border-radius:11px}
+.cues li{font-size:14px;color:var(--ink2);margin:0 0 5px;line-height:1.4}
+.cues li:last-child{margin:0}
+.cues ul{margin:0;padding-left:17px}
+
+.cfoot{display:flex;gap:9px;padding:12px 13px 13px;flex-wrap:wrap}
+.act{
+  height:var(--tap);border-radius:12px;border:1px solid var(--line);
+  background:var(--panel2);cursor:pointer;padding:0 15px;font-size:15px;font-weight:600;
+  display:flex;align-items:center;gap:8px;
+}
+.act:active{opacity:.8}
+.act.prime{flex:1;justify-content:center;background:var(--panel2)}
+.card.done .act.prime{background:var(--go);color:#06210f;border-color:var(--go);font-weight:700}
+.act.rest{background:transparent;color:var(--ink2)}
+
+.log{padding:0 13px 13px}
+.logtable{width:100%;border-collapse:collapse}
+.logtable th{font-size:12px;color:var(--ink3);font-weight:600;text-align:left;padding:0 0 6px}
+.logtable td{padding:0 0 8px}
+.logtable td:first-child{width:34px;color:var(--ink3);font-size:14px;font-weight:700}
+.logtable input{
+  width:100%;height:46px;background:var(--bg2);border:1px solid var(--line);
+  border-radius:10px;color:var(--ink);font-size:16px;font-weight:600;
+  padding:0 11px;font-variant-numeric:tabular-nums;
+}
+.logtable input:focus{border-color:var(--key);outline:none}
+.logtable .sep{width:9px}
+
+/* ---------- bottom bar ---------- */
+.dock{
+  position:fixed;left:0;right:0;bottom:0;z-index:50;
+  background:var(--panel);border-top:1px solid var(--line);
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  box-shadow:0 -8px 24px rgba(0,0,0,.3);
+}
+.dockin{max-width:640px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.dockstat{flex:1;min-width:0}
+.dockstat .v{font-size:17px;font-weight:700;line-height:1.1}
+.dockstat .k{font-size:12px;color:var(--ink3)}
+.dockstat.warn .v{color:var(--hot)}
+.dbtn{
+  height:var(--tap);border-radius:13px;border:1px solid var(--line);background:var(--panel2);
+  padding:0 16px;font-size:15px;font-weight:650;cursor:pointer;display:flex;align-items:center;gap:8px;
+}
+.dbtn.timer{background:var(--hot);border-color:var(--hot);color:#fff}
+.dbtn:active{opacity:.85}
+
+/* ---------- timer sheet ---------- */
+.sheet{
+  position:fixed;inset:0;z-index:60;background:rgba(4,9,14,.72);
+  display:none;align-items:flex-end;justify-content:center;
+}
+.sheet.on{display:flex}
+.sheetin{
+  width:100%;max-width:640px;background:var(--panel);
+  border-radius:22px 22px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--line2);
+}
+.grab{width:44px;height:5px;border-radius:99px;background:var(--line2);margin:0 auto 14px}
+.ring{position:relative;width:216px;height:216px;margin:2px auto 14px}
+.ring svg{transform:rotate(-90deg)}
+.ring .num{
+  position:absolute;inset:0;display:grid;place-items:center;text-align:center;
+}
+.ring .num b{font-size:52px;font-weight:700;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.ring .num i{display:block;font-style:normal;font-size:13px;color:var(--ink3);margin-top:2px}
+.presets{display:flex;gap:8px;margin-bottom:12px}
+.presets button{
+  flex:1;height:var(--tap);border-radius:12px;border:1px solid var(--line);
+  background:var(--panel2);font-size:15px;font-weight:650;cursor:pointer;
+}
+.presets button.on{border-color:var(--key);color:var(--key)}
+.tctl{display:flex;gap:9px}
+.tctl button{flex:1;height:58px;border-radius:13px;border:1px solid var(--line);background:var(--panel2);font-size:16px;font-weight:700;cursor:pointer}
+.tctl button.go{background:var(--hot);border-color:var(--hot);color:#fff}
+
+/* ---------- history / empty ---------- */
+.empty{
+  text-align:center;padding:44px 20px;color:var(--ink2);
+}
+.empty h3{font-size:19px;margin-bottom:8px;color:var(--ink)}
+.empty p{margin:0;font-size:15px;line-height:1.5}
+.hist{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:13px 14px;font-size:14px;color:var(--ink2)}
+.hist b{color:var(--ink);font-size:14.5px;display:block;margin-bottom:6px}
+.hist div{padding:5px 0;border-top:1px solid var(--line)}
+.hist div:first-of-type{border-top:none}
+.finish{
+  width:100%;height:58px;margin-top:6px;border-radius:13px;cursor:pointer;
+  background:var(--go);border:none;color:#06210f;font-size:16px;font-weight:750;
+}
+.ghost{
+  width:100%;height:var(--tap);margin-top:9px;border-radius:12px;cursor:pointer;
+  background:transparent;border:1px solid var(--line);color:var(--ink2);font-size:15px;font-weight:600;
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+@media (max-width:359px){.viz{flex-basis:96px;height:84px}.big{font-size:22px}}
+
+/* ---------- svg illustration classes ---------- */
+svg .lm{stroke:var(--ink);stroke-width:5}
+svg .lb{stroke:var(--ink3);stroke-width:4.5}
+svg .tq{stroke:var(--ink);stroke-width:8}
+svg .hd{stroke:var(--ink);stroke-width:4.5;fill:none}
+svg .gp{stroke:var(--line2);stroke-width:3}
+svg .pr{stroke:var(--line2);stroke-width:3.5;fill:none}
+svg .eq{stroke:var(--key);stroke-width:4.5}
+svg .eq.f{fill:var(--key);stroke:none}
+svg .cb{stroke:var(--key);stroke-width:2.5;stroke-dasharray:7 5}
+svg .bd{stroke:var(--key);stroke-width:3}
+svg .rp{stroke:var(--key);stroke-width:2.5}
+.srow .sv svg .lm,.srow .sv svg .tq{stroke:var(--ink2)}
+
+/* ---------- form-video links ---------- */
+.act.vid{
+  text-decoration:none;color:var(--ink2);flex:0 0 auto;gap:7px;
+  padding:0 14px;font-weight:600;
+}
+.act.vid:active{opacity:.75}
+a.srow{text-decoration:none;color:inherit;-webkit-tap-highlight-color:transparent}
+a.srow:active{background:var(--panel2)}
+.srow .tm{margin-left:auto}
+.srow .go{
+  flex:0 0 38px;height:38px;border-radius:10px;background:var(--panel2);
+  border:1px solid var(--line);display:grid;place-items:center;color:var(--ink3);
+}
+@media (max-width:359px){
+  .act.vid{padding:0 11px}
+  .srow .go{flex-basis:34px;height:34px}
+}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tab{
+  flex:1;height:48px;border-radius:12px;cursor:pointer;
+  background:transparent;border:1px solid var(--line);color:var(--ink3);
+  font-size:14.5px;font-weight:640;
+}
+.tab.on{background:var(--panel);color:var(--ink);border-color:var(--line2)}
+
+/* ---------- mode switch ---------- */
+.seg{display:flex;gap:6px;padding:5px;background:var(--bg2);border-radius:13px;margin-bottom:14px}
+.seg button{
+  flex:1;height:46px;border-radius:9px;border:none;cursor:pointer;
+  background:transparent;color:var(--ink3);font-size:15px;font-weight:640;
+}
+.seg button.on{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+
+.pickhint{font-size:13px;color:var(--ink3);margin:14px 0 8px}
+.pillrow{display:flex;gap:7px}
+.pillrow.wrap{flex-wrap:wrap;margin-bottom:2px}
+.pill{
+  flex:1 0 auto;min-height:44px;padding:0 14px;border-radius:11px;cursor:pointer;
+  background:var(--panel2);border:1px solid var(--line);color:var(--ink2);
+  font-size:14px;font-weight:600;
+}
+.pill.on{border-color:var(--key);color:var(--key);background:transparent}
+
+/* ---------- muscle picker ---------- */
+.mgrid{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+.mchip{
+  flex:1 0 30%;min-height:54px;border-radius:12px;cursor:pointer;
+  background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+  font-size:15px;font-weight:620;display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.mchip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.mchip i{
+  font-style:normal;font-size:12px;font-weight:800;width:20px;height:20px;border-radius:50%;
+  background:var(--key);color:#1a1300;display:grid;place-items:center;
+}
+.toggle{
+  width:100%;min-height:52px;margin-top:12px;border-radius:12px;cursor:pointer;text-align:left;
+  background:var(--panel2);border:1px solid var(--line);color:var(--ink2);
+  font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:11px;padding:0 13px;
+}
+.toggle.on{color:var(--ink);border-color:var(--go)}
+.toggle .box{
+  flex:0 0 24px;height:24px;border-radius:7px;border:1.5px solid var(--line2);
+  display:grid;place-items:center;font-size:14px;color:var(--go);
+}
+.toggle.on .box{border-color:var(--go)}
+
+/* ---------- coach's note ---------- */
+.advice{
+  margin-top:16px;padding:13px 14px;border-radius:12px;
+  background:var(--bg2);border:1px solid var(--line);border-left:4px solid var(--go);
+}
+.advice.caution{border-left-color:var(--int)}
+.advice.rethink{border-left-color:var(--hot)}
+.advice b{font-size:15.5px}
+.advice .seq{
+  font-size:13px;color:var(--ink3);margin:4px 0 9px;font-weight:600;letter-spacing:.02em;
+}
+.advice ul{margin:0;padding-left:17px}
+.advice li{font-size:14px;color:var(--ink2);line-height:1.45;margin-bottom:6px}
+.advice li:last-child{margin-bottom:0}
+.advice.compact{margin:0 0 16px}
+.build.wide{width:100%;margin-top:14px}
+.build.off{background:var(--panel2);color:var(--ink3);border:1px solid var(--line)}
+
+/* ---------- muscle tag on cards ---------- */
+.mtag{
+  display:inline-block;font-size:11.5px;font-weight:800;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink3);margin-bottom:2px;
+}
+
+/* ---------- library ---------- */
+.libitem{border-top:1px solid var(--line)}
+.libitem:first-child{border-top:none}
+.libitem.open{background:var(--bg2)}
+.librow{
+  width:100%;min-height:60px;display:flex;align-items:center;gap:11px;
+  padding:11px 14px;background:transparent;border:none;cursor:pointer;text-align:left;
+}
+.librow .nm{flex:1;font-size:15.5px;font-weight:580;min-width:0}
+.librow .nm em{display:block;font-style:normal;font-size:12.5px;color:var(--ink3);font-weight:400;margin-top:1px}
+.librow .caret{font-size:20px;color:var(--ink3);width:18px;text-align:center}
+.libbody{display:flex;gap:12px;padding:0 14px 14px;align-items:flex-start}
+.libbody .viz{flex:0 0 106px;height:88px}
+.libinfo{flex:1;min-width:0}
+.cuelist{margin:9px 0 11px;padding-left:16px}
+.cuelist li{font-size:13.5px;color:var(--ink2);line-height:1.4;margin-bottom:4px}
+.libinfo .act.vid{display:inline-flex;height:46px;border:1px solid var(--line);border-radius:11px;background:var(--panel2)}
+
+/* ---------- data sheet ---------- */
+.dhead{font-size:20px;margin-bottom:12px}
+.dnum{background:var(--bg2);border-radius:12px;padding:4px 13px;margin-bottom:14px}
+.drow{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line);font-size:14.5px;color:var(--ink2)}
+.drow:first-child{border-top:none}
+.drow b{margin-left:auto;color:var(--ink);font-weight:640;text-align:right}
+.dwarn{margin:0 0 12px;padding:11px 13px;border-radius:11px;background:rgba(242,99,74,.12);
+  border:1px solid var(--hot);font-size:13.5px;line-height:1.45}
+.dmsg{margin:0 0 12px;padding:11px 13px;border-radius:11px;background:var(--bg2);
+  border:1px solid var(--go);font-size:13.5px;line-height:1.45;color:var(--ink)}
+.dact{
+  display:flex;align-items:center;justify-content:center;width:100%;min-height:56px;
+  margin-bottom:9px;border-radius:13px;cursor:pointer;font-size:15.5px;font-weight:650;
+  background:var(--panel2);border:1px solid var(--line);color:var(--ink);
+}
+.dact:active{opacity:.82}
+.dact.quiet{color:var(--ink3);font-weight:600}
+.dact.danger{border-color:var(--hot);color:var(--hot)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap topbar">
+    <div class="mark"><b>Session</b><span id="today"></span></div>
+    <button class="iconbtn" data-act="opendata" aria-label="Data and backup">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
+    </button>
+    <button class="iconbtn" data-act="theme" aria-label="Switch between dark and light">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v2M12 19v2M5 12H3M21 12h-2M6 6L4.5 4.5M19.5 19.5 18 18M18 6l1.5-1.5M4.5 19.5 6 18"/><circle cx="12" cy="12" r="4"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="tabs" id="nav"></div>
+  <div id="pick"></div>
+  <div id="body"></div>
+</main>
+
+<div class="dock" id="dock"></div>
+
+<div class="sheet" id="sheet" role="dialog" aria-label="Rest timer">
+  <div class="sheetin">
+    <div class="grab"></div>
+    <div class="ring">
+      <svg width="216" height="216" viewBox="0 0 216 216">
+        <circle cx="108" cy="108" r="96" fill="none" stroke="var(--line)" stroke-width="13"/>
+        <circle id="tring" cx="108" cy="108" r="96" fill="none" stroke="var(--hot)" stroke-width="13"
+                stroke-linecap="round" stroke-dasharray="603.19" stroke-dashoffset="0"/>
+      </svg>
+      <div class="num"><div><b id="tnum">1:30</b><i>rest</i></div></div>
+    </div>
+    <div class="presets">
+      <button data-pre="30">30s</button>
+      <button data-pre="60">60s</button>
+      <button data-pre="90">90s</button>
+      <button data-pre="120">2m</button>
+      <button data-pre="180">3m</button>
+    </div>
+    <div class="tctl">
+      <button data-act="treset">Reset</button>
+      <button data-act="tplus">+15s</button>
+      <button class="go" data-act="tgo" id="tgo">Start</button>
+    </div>
+    <button class="ghost" data-act="tclose">Close</button>
+  </div>
+</div>
+
+<div class="sheet" id="data" role="dialog" aria-label="Data and backup">
+  <div class="sheetin">
+    <div class="grab"></div>
+    <h2 class="dhead">Your data</h2>
+    <div id="dnum" class="dnum"></div>
+    <button class="dact" data-act="export">Download a backup file</button>
+    <label class="dact">Restore from a backup file
+      <input type="file" id="importfile" accept="application/json,.json" hidden>
+    </label>
+    <button class="dact quiet" data-act="wipe">Clear all history and logs</button>
+    <button class="ghost" data-act="dclose">Close</button>
+  </div>
+</div>
+
+<script>/* ============================================================
+   EXERCISE LIBRARY
+   [name, pattern, equipment, difficulty, target, "cue|cue|cue", role]
+   equipment: bb barbell · db dumbbell · kb kettlebell · cbl cable
+              mch machine · bw bodyweight · band resistance band · oth other
+   role:      C heavy compound · c compound · a accessory
+              i isolation · t timed hold · x cardio interval
+   ============================================================ */
+var RAW = {
+
+chest: [
+["Barbell Bench Press","press","bb","Intermediate","Mid & lower pecs","Pin the shoulder blades down and back|Bar path finishes over the shoulders|Drive the feet into the floor","C"],
+["Incline Barbell Press","incline","bb","Intermediate","Upper (clavicular) pecs","Set the bench near 30°|Touch just below the collarbone|Keep wrists stacked over elbows","C"],
+["Flat Dumbbell Press","press","db","Beginner","Whole pectoral","Lower until the elbows sit level with the torso|Press slightly inward at the top|Keep a soft ribcage, no arching off the bench","c"],
+["Incline Dumbbell Press","incline","db","Intermediate","Upper pecs","Elbows under the wrists throughout|Stop just short of the bells clashing|Control a 3-second lowering","c"],
+["Decline Barbell Press","press","bb","Intermediate","Lower pecs","Lock the legs in before unracking|Touch the lower sternum|Keep the head neutral on the pad","c"],
+["Dumbbell Floor Press","press","db","Beginner","Chest and triceps","Let the triceps rest on the floor for a beat|Press straight up, not back|Squeeze the bells inward","a"],
+["Machine Chest Press","press","mch","Beginner","Whole pectoral","Set the handles at nipple height|Stop before the shoulders roll forward|Pause one second at full stretch","c"],
+["Hammer Strength Incline Press","incline","mch","Intermediate","Upper pecs","Push through the base of the palm|Keep the back flat on the pad|Full range, no half reps","c"],
+["Smith Machine Bench Press","press","mch","Beginner","Mid pecs","Set the bench so the bar lands mid-chest|Unrack with a wrist flick, not a shrug|Control the eccentric","c"],
+["Close-Grip Bench Press","press","bb","Intermediate","Inner chest and triceps","Hands just inside shoulder width|Elbows tucked to about 30°|Keep the wrists straight","c"],
+["Push-Up","press","bw","Beginner","Chest and core","Hands under the shoulders, slightly wider|Squeeze the glutes so the hips do not sag|Lower the chest, not the head","a"],
+["Deficit Push-Up","press","bw","Intermediate","Chest at full stretch","Elevate the hands on plates or blocks|Sink until you feel the pecs load|Push the floor away","a"],
+["Weighted Push-Up","press","bw","Intermediate","Whole pectoral","Have a partner set the plate on the upper back|Keep a straight line from ear to ankle|Full lockout each rep","a"],
+["Archer Push-Up","press","bw","Advanced","Chest, one side at a time","Slide the straight arm out wide|Load the bent side almost fully|Alternate sides each rep","a"],
+["Chest Dip","dip","bw","Intermediate","Lower pecs","Lean the torso forward about 30°|Elbows flare slightly, that is fine here|Stop when the shoulders reach elbow height","c"],
+["Weighted Chest Dip","dip","bw","Advanced","Lower pecs","Add the belt only once bodyweight is easy|Keep the lean consistent every rep|Do not bounce out of the bottom","c"],
+["Cable Crossover, High to Low","fly","cbl","Intermediate","Lower and inner pecs","Step forward so the cables stay under tension|Meet the hands just below the belly button|Soft elbow angle, do not press","i"],
+["Cable Crossover, Low to High","fly","cbl","Intermediate","Upper pecs","Start with the hands by the hips|Finish at eye level|Think about hugging, not lifting","i"],
+["Standing Cable Fly","fly","cbl","Beginner","Whole pectoral","Set pulleys at chest height|Keep a fixed elbow bend|Pause one second at the squeeze","i"],
+["Pec Deck","fly","mch","Beginner","Inner pecs","Sit tall with the back flat on the pad|Drive with the elbows, not the hands|Slow return to full stretch","i"],
+["Incline Dumbbell Fly","fly","db","Intermediate","Upper pecs","Bench at 30°, no higher|Stop the stretch at chest level|Turn the pinkies up at the top","i"],
+["Flat Dumbbell Fly","fly","db","Intermediate","Whole pectoral","Keep the elbows slightly bent and locked there|Lower under full control|Do not let the bells drift behind the head","i"],
+["Machine Fly","fly","mch","Beginner","Inner pecs","Adjust the seat so the handles are chest height|Squeeze for a full second|Never slam the stack","i"],
+["Band Chest Press","press","band","Beginner","Whole pectoral","Anchor the band at chest height behind you|Step out until there is tension at the start|Press and squeeze at lockout","a"],
+["Band Crossover Fly","fly","band","Beginner","Inner pecs","Cross the hands past the midline|Keep the shoulders down|Resist the band on the way back","i"],
+["Landmine Press","incline","bb","Intermediate","Upper chest and front delt","Stand in a split stance for balance|Press up and slightly across|Keep the ribs down","a"],
+["Svend Press","fly","oth","Beginner","Inner pecs","Crush two plates together the whole set|Press straight out from the sternum|Keep constant inward pressure","i"],
+["Single-Arm Dumbbell Floor Press","press","db","Intermediate","Chest and anti-rotation core","Brace hard so the hips do not twist|Press straight up over the shoulder|Match the reps on both sides","a"],
+["Dumbbell Pullover","pullover","db","Intermediate","Pecs and lats","Cradle one bell with both hands|Only go as deep as the shoulders allow|Pull with the chest, not the arms","i"]
+],
+
+back: [
+["Conventional Deadlift","hinge","bb","Advanced","Full posterior chain","Set the lats before the bar leaves the floor|Push the floor away rather than yanking up|Finish standing tall, no lean back","C"],
+["Rack Pull","hinge","bb","Intermediate","Upper back and traps","Set the pins just below the knee|Keep the bar dragging up the thigh|Hold the top for a beat","C"],
+["Barbell Bent-Over Row","row","bb","Intermediate","Mid back and lats","Hinge to about 45° and hold it|Pull to the belly button|Do not let the torso rise with the bar","C"],
+["Pendlay Row","row","bb","Advanced","Mid back","Reset the bar on the floor every rep|Torso stays parallel throughout|Explode up, control down","c"],
+["T-Bar Row","row","bb","Intermediate","Mid back thickness","Chest into the pad if one is available|Drive the elbows back past the ribs|Full stretch at the bottom","c"],
+["Chest-Supported Row Machine","row","mch","Beginner","Rhomboids and mid traps","Let the shoulder blades travel forward at the stretch|Pull the handles to the ribs|No body English, the pad is there for a reason","c"],
+["Seated Cable Row","row","cbl","Beginner","Mid back","Sit tall, knees softly bent|Lead with the elbows|Let the weight pull you into a stretch, then reset","c"],
+["Single-Arm Dumbbell Row","row","db","Beginner","Lats","Brace the free hand on the bench|Row toward the hip, not the shoulder|Keep the hips square to the floor","c"],
+["Chest-Supported Dumbbell Row","row","db","Intermediate","Mid back","Set the bench near 30°|Pull with a neutral grip|Pause at the top of every rep","a"],
+["Meadows Row","row","bb","Advanced","Lats and upper back","Stagger the stance, hips square|Pull the landmine end high toward the hip|Let the shoulder round forward at the stretch","a"],
+["Inverted Row","row","bw","Beginner","Mid back","Set the bar around hip height|Body stays one rigid line|Touch the chest, then lower slowly","a"],
+["Pull-Up","pull","bw","Intermediate","Lats","Start from a dead hang each rep|Pull the elbows down to the ribs|Chin clears the bar without craning","C"],
+["Chin-Up","pull","bw","Intermediate","Lats and biceps","Supinated grip, shoulder width|Lead with the chest to the bar|Lower over three seconds","c"],
+["Weighted Pull-Up","pull","bw","Advanced","Lats","Add weight only when 10 clean reps are easy|Keep the core braced so you do not swing|Full dead-hang between reps","C"],
+["Wide-Grip Lat Pulldown","pull","cbl","Beginner","Lat width","Grip about 1.5x shoulder width|Pull to the collarbone|Keep the chest proud, lean back a touch","c"],
+["Neutral-Grip Pulldown","pull","cbl","Beginner","Lats","Use the V-handle|Drive the elbows down and back|Control the stretch at the top","c"],
+["Single-Arm Lat Pulldown","pull","cbl","Intermediate","Lats, one side at a time","Kneel or sit facing the stack|Let the shoulder rise fully at the top|Pull the elbow toward the back pocket","a"],
+["Straight-Arm Pulldown","pullover","cbl","Beginner","Lats","Keep the arms nearly locked|Hinge slightly at the hips|Push the bar to the thighs, then release slowly","i"],
+["Machine Pullover","pullover","mch","Intermediate","Lats","Set the seat so the shoulders line up with the axis|Pull with the elbows on the pads|Squeeze the lats at the bottom","i"],
+["Dumbbell Pullover","pullover","db","Intermediate","Lats","Lie along or across the bench|Only stretch as far as the shoulders allow|Keep the ribs pulled down","i"],
+["Face Pull","rearfly","cbl","Beginner","Rear delts and mid traps","Set the pulley at eye height|Pull the rope apart toward the forehead|Finish with the thumbs pointing back","i"],
+["Reverse Pec Deck","rearfly","mch","Beginner","Rear delts","Chest against the pad|Lead with the pinkies|Stop at the line of the shoulders","i"],
+["Barbell Shrug","shrug","bb","Beginner","Upper traps","Shrug straight up, no rolling|Pause one second at the top|Let the traps stretch at the bottom","i"],
+["Dumbbell Shrug","shrug","db","Beginner","Upper traps","Let the arms hang like ropes|Elevate, do not lean back|Slow release each rep","i"],
+["45-Degree Back Extension","hinge","bw","Beginner","Erectors and glutes","Set the pad at the hip crease|Hinge, do not round|Stop at a straight line, no hyperextension","a"],
+["Seated Band Row","row","band","Beginner","Mid back","Anchor the band at foot level|Sit tall and pull to the ribs|Keep constant tension between reps","a"],
+["Band Lat Pulldown","pull","band","Beginner","Lats","Anchor overhead and kneel|Pull the band to the chest|Resist all the way back up","a"],
+["Renegade Row","row","db","Advanced","Lats and anti-rotation core","Widen the feet for a stable base|Row without letting the hips twist|Use hex bells so they do not roll","a"],
+["Landmine Row","row","bb","Intermediate","Lats","Straddle the bar in a hinge|Pull the handle toward the belly|Keep the neck in line with the spine","a"]
+],
+
+shoulders: [
+["Standing Overhead Press","ohp","bb","Intermediate","Front and side delts","Squeeze the glutes to stop the lower back arching|Push the head through once the bar clears|Bar finishes over the mid-foot","C"],
+["Seated Dumbbell Shoulder Press","ohp","db","Beginner","All three delt heads","Set the bench a notch off vertical|Elbows about 30° in front, not flared wide|Stop just short of clashing the bells","c"],
+["Arnold Press","ohp","db","Intermediate","Front and side delts","Start palms facing you|Rotate as you press, not before|Reverse the rotation on the way down","c"],
+["Push Press","ohp","bb","Advanced","Delts and overhead power","Short dip, straight down|Drive with the legs, finish with the arms|Reset the rack position each rep","C"],
+["Machine Shoulder Press","ohp","mch","Beginner","Delts","Set the seat so the handles start at ear height|Keep the back flat on the pad|Do not lock out aggressively","c"],
+["Half-Kneeling Landmine Press","ohp","bb","Intermediate","Front delts","Inside knee up, glutes squeezed|Press up and slightly forward|Keep the ribs stacked over the hips","a"],
+["Seated Z-Press","ohp","db","Advanced","Delts and trunk","Sit on the floor with the legs straight|No leaning back at all|Brace the abs the whole set","a"],
+["Pike Push-Up","ohp","bw","Intermediate","Front delts","Hips high, body in an inverted V|Lower the crown of the head toward the floor|Elbows track slightly forward","a"],
+["Dumbbell Lateral Raise","latraise","db","Beginner","Side delts","Lead with the elbow, not the hand|Stop at shoulder height|Lower over three seconds","i"],
+["Cable Lateral Raise","latraise","cbl","Intermediate","Side delts","Run the cable behind the back|Keep tension at the bottom|No shrugging as you lift","i"],
+["Machine Lateral Raise","latraise","mch","Beginner","Side delts","Line the shoulder up with the pivot|Push with the outside of the arm|Pause at the top","i"],
+["Leaning Cable Lateral Raise","latraise","cbl","Advanced","Side delts at long length","Hold the upright and lean away|Let the arm cross the body at the bottom|Raise to shoulder height only","i"],
+["Band Lateral Raise","latraise","band","Beginner","Side delts","Stand on the band, feet together|Elbows soft and fixed|Control the return, do not let it snap","i"],
+["Dumbbell Front Raise","frontraise","db","Beginner","Front delts","Raise to eye level, not overhead|Keep the ribs down|Alternate arms to stay strict","i"],
+["Plate Front Raise","frontraise","oth","Beginner","Front delts","Hold the plate at 3 and 9 o'clock|Lift to eye level|No swinging from the hips","i"],
+["Cable Front Raise","frontraise","cbl","Beginner","Front delts","Cable between the legs from a low pulley|Straight arm, thumb up|Stop at eye level","i"],
+["Bent-Over Reverse Fly","rearfly","db","Beginner","Rear delts","Hinge until the torso is near parallel|Lead with the pinkies|Squeeze the shoulder blades last, not first","i"],
+["Cable Face Pull","rearfly","cbl","Beginner","Rear delts and rotator cuff","Rope at eye height|Pull apart, not just back|Externally rotate at the finish","i"],
+["Reverse Pec Deck","rearfly","mch","Beginner","Rear delts","Chest flat on the pad|Soft elbows throughout|Stop level with the shoulders","i"],
+["Band Pull-Apart","rearfly","band","Beginner","Rear delts and mid traps","Arms straight at chest height|Pull until the band touches the sternum|Keep the shoulders down and back","i"],
+["Cable Upright Row","latraise","cbl","Intermediate","Side delts and traps","Use a wide grip on the rope or bar|Pull to lower-chest height only|Stop if the shoulders pinch","i"],
+["Dumbbell Upright Row","latraise","db","Intermediate","Side delts","Wide grip, elbows lead|Keep the bells close to the body|Do not pull above the collarbone","i"],
+["Barbell Shrug","shrug","bb","Beginner","Upper traps","Straight up and down|Hold the top for a full second|Use straps once the grip gives out","i"],
+["Dumbbell Shrug","shrug","db","Beginner","Upper traps","Neutral grip at the sides|Elevate the shoulders, not the arms|Full stretch at the bottom","i"],
+["Cuban Press","rearfly","db","Advanced","Rear delts and rotator cuff","Light weight, this is a cuff exercise|Row, rotate, then press|Move slowly through the rotation","i"],
+["Cable Y-Raise","frontraise","cbl","Intermediate","Lower traps and front delts","Raise the arms into a Y overhead|Thumbs up throughout|Keep the neck long","i"],
+["Seated Dumbbell Lateral Raise","latraise","db","Beginner","Side delts","Sitting removes the leg drive|Slight forward lean|Stop at shoulder height","i"],
+["Kettlebell Bottoms-Up Press","ohp","kb","Advanced","Delts and shoulder stability","Crush the handle to keep the bell upright|Go light, this is about control|Press in a straight line","a"]
+],
+
+biceps: [
+["Barbell Curl","curl","bb","Beginner","Both biceps heads","Elbows pinned to the ribs|No swing from the hips|Lower over three seconds","c"],
+["EZ-Bar Curl","curl","bb","Beginner","Biceps","The angled grip is easier on the wrists|Keep the upper arms still|Squeeze hard at the top","c"],
+["Alternating Dumbbell Curl","curl","db","Beginner","Biceps","Supinate as you lift, pinky turning up|One arm fully finishes before the other starts|Elbows stay at the sides","a"],
+["Hammer Curl","hammer","db","Beginner","Brachialis and forearm","Neutral grip the whole rep|Do not let the elbows drift forward|Control the negative","a"],
+["Incline Dumbbell Curl","curl","db","Intermediate","Long head at full stretch","Set the bench around 45°|Let the arms hang straight behind the torso|Do not shrug at the top","i"],
+["EZ-Bar Preacher Curl","curl","bb","Intermediate","Short head","Armpits tight against the pad|Never fully lock out at the bottom under load|Pause halfway up on the last reps","i"],
+["Machine Preacher Curl","curl","mch","Beginner","Biceps","Line the elbows up with the pivot|Full range, top to bottom|Slow eccentric","i"],
+["Cable Curl","curl","cbl","Beginner","Biceps","Stand a step back from the pulley|Tension stays on at the bottom|Elbows locked at the sides","i"],
+["Cable Rope Hammer Curl","hammer","cbl","Beginner","Brachialis","Pull the rope ends apart at the top|Neutral wrists throughout|Do not lean back","i"],
+["High Cable Curl","curl","cbl","Intermediate","Biceps peak","Pulleys at head height, arms out wide|Curl toward the ears|Hold the flex for a second","i"],
+["Concentration Curl","curl","db","Beginner","Biceps peak","Brace the elbow on the inner thigh|Curl to the opposite shoulder|Full supination at the top","i"],
+["Spider Curl","curl","db","Intermediate","Short head","Chest on an incline bench, arms hanging|No momentum is possible here, so stay strict|Squeeze at the top","i"],
+["Drag Curl","curl","bb","Intermediate","Long head","Drag the bar up the torso|Elbows travel back, not forward|Shorter range, heavier squeeze","i"],
+["Zottman Curl","hammer","db","Intermediate","Biceps and forearms","Curl up supinated|Rotate to pronated at the top|Lower slowly with palms down","i"],
+["Reverse EZ-Bar Curl","hammer","bb","Intermediate","Brachioradialis","Overhand grip, wrists straight|Lighter weight than a normal curl|Keep the elbows tight","i"],
+["Band Curl","curl","band","Beginner","Biceps","Stand on the band with both feet|Resistance peaks at the top, so squeeze there|Slow release","i"],
+["Chin-Up","pull","bw","Intermediate","Biceps and lats","Supinated grip, shoulder width|Pull the elbows to the ribs|Add weight once 10 reps are clean","c"],
+["Bodyweight Bar Curl","row","bw","Intermediate","Biceps","Set the bar around waist height|Body straight, heels on the floor|Curl the chest to the bar","a"],
+["Cross-Body Hammer Curl","hammer","db","Beginner","Brachialis","Curl across toward the opposite pec|Neutral grip the whole way|Alternate arms","i"],
+["21s Barbell Curl","curl","bb","Intermediate","Whole biceps","Seven bottom-half reps|Seven top-half reps|Seven full reps, no rest between blocks","i"],
+["Seated Dumbbell Curl","curl","db","Beginner","Biceps","Sitting cuts out the body swing|Elbows just behind the torso|Full stretch at the bottom","i"],
+["Bayesian Cable Curl","curl","cbl","Intermediate","Long head","Face away from a low pulley|Let the arm travel behind the body|Keep the elbow fixed in space","i"],
+["Dumbbell Wrist Curl","hammer","db","Beginner","Forearm flexors","Forearms flat on a bench|Let the bells roll to the fingertips|High reps, slow tempo","i"],
+["Reverse Wrist Curl","hammer","db","Beginner","Forearm extensors","Very light weight to start|Small range, full control|Pause at the top of every rep","i"],
+["Single-Arm Cable Curl","curl","cbl","Beginner","Biceps","Face the stack, elbow at the side|Turn the pinky up at the top|Match reps side to side","i"],
+["Wide-Grip Barbell Curl","curl","bb","Intermediate","Short head","Hands outside shoulder width|Elbows stay tight to the body|Squeeze at the top","i"],
+["Isometric Curl Hold","curl","db","Intermediate","Biceps under tension","Hold at 90° of elbow bend|Breathe, do not hold your breath|Fight the drop as long as you can","t"]
+],
+
+triceps: [
+["Close-Grip Bench Press","press","bb","Intermediate","All three triceps heads","Hands just inside shoulder width|Elbows tucked close to the ribs|Touch the lower sternum","C"],
+["Weighted Dip","dip","bw","Advanced","Triceps","Keep the torso as upright as possible|Elbows point straight back|Stop at 90° if the shoulders complain","c"],
+["Bench Dip","dip","bw","Beginner","Triceps","Hands at the edge, fingers forward|Hips stay close to the bench|Elevate the feet to make it harder","a"],
+["Machine Dip","dip","mch","Beginner","Triceps","Sit tall against the pad|Press down and lock out|Control the return","c"],
+["EZ-Bar Skull Crusher","skull","bb","Intermediate","Long head","Lower to the forehead or just behind it|Upper arms stay angled back slightly|Do not let the elbows flare","c"],
+["Dumbbell Skull Crusher","skull","db","Intermediate","Long head","Neutral grip, bells beside the ears|Only the forearms move|Pause at the stretch","a"],
+["Overhead Rope Extension","overext","cbl","Beginner","Long head","Face away from the stack|Elbows point forward and stay there|Full stretch behind the head","i"],
+["Two-Hand Overhead Dumbbell Extension","overext","db","Beginner","Long head","Cradle one bell with both hands|Keep the elbows narrow|Lower until you feel the stretch, then press","i"],
+["Single-Arm Overhead Cable Extension","overext","cbl","Intermediate","Long head","One arm, elbow high and still|Full extension without locking hard|Match both sides","i"],
+["Rope Pushdown","pushdown","cbl","Beginner","Lateral head","Elbows pinned to the sides|Split the rope at the bottom|Do not lean over the stack","i"],
+["Straight-Bar Pushdown","pushdown","cbl","Beginner","Triceps","Upper arms vertical and still|Push to a full lockout|Slow, controlled return","i"],
+["Reverse-Grip Pushdown","pushdown","cbl","Intermediate","Medial head","Underhand grip on a straight bar|Wrists stay neutral, not bent|Lighter load than overhand","i"],
+["Single-Arm Reverse Pushdown","pushdown","cbl","Intermediate","Medial head","Palm up, elbow tight to the ribs|Full extension, brief squeeze|Even reps on both sides","i"],
+["Band Pushdown","pushdown","band","Beginner","Triceps","Anchor overhead|Tension increases at lockout, so squeeze|High reps work well here","i"],
+["Band Overhead Extension","overext","band","Beginner","Long head","Anchor low behind you|Elbows narrow and high|Resist the return","i"],
+["Diamond Push-Up","press","bw","Intermediate","Triceps","Index fingers and thumbs touching|Elbows brush past the ribs|Keep the hips in line","a"],
+["JM Press","skull","bb","Advanced","Triceps","Half skull crusher, half close-grip press|Lower toward the chin|Keep the elbows under the bar","a"],
+["Tate Press","skull","db","Advanced","Lateral head","Bells turned in, elbows out|Lower to the chest in an arc|Light weight, strict form","i"],
+["Dumbbell Kickback","pushdown","db","Beginner","Lateral head","Upper arm parallel to the floor and still|Extend fully, pause|Do not swing the bell back","i"],
+["Cable Kickback","pushdown","cbl","Beginner","Lateral head","Low pulley, hinge forward|Elbow fixed high|Squeeze at full extension","i"],
+["Machine Triceps Extension","pushdown","mch","Beginner","Triceps","Set the seat so the elbows match the pivot|Full lockout each rep|No bouncing at the bottom","i"],
+["Cross-Body Cable Extension","pushdown","cbl","Intermediate","Triceps","Pull across the chest to the opposite hip|Keep the shoulder still|Slow eccentric","i"],
+["Bodyweight Triceps Extension","skull","bw","Advanced","Triceps","Set a bar at hip height|Body stays rigid, hinge only at the elbows|Lower the forehead under the bar","a"],
+["Floor Skull Crusher","skull","db","Beginner","Triceps","The floor limits the stretch, which saves the elbows|Pause when the upper arm touches down|Press back to lockout","i"],
+["Smith Close-Grip Press","press","mch","Beginner","Triceps","Narrow grip, elbows tucked|Fixed bar path lets you push hard|Touch the lower chest","c"],
+["California Press","skull","bb","Advanced","Triceps","Lower like a skull crusher, press like a close grip|Keep it in one smooth arc|Moderate weight only","a"]
+],
+
+legs: [
+["Back Squat","squat","bb","Intermediate","Quads and glutes","Brace before you unrack, not after|Break at the hips and knees together|Drive the whole foot through the floor","C"],
+["Front Squat","squat","bb","Advanced","Quads","Elbows high the entire set|Stay upright, let the knees travel|Descend under control","C"],
+["Goblet Squat","squat","db","Beginner","Quads and glutes","Hold the bell at chest height|Elbows track inside the knees|Sit between the heels","c"],
+["Hack Squat Machine","squat","mch","Intermediate","Quads","Feet mid-platform, shoulder width|Do not let the lower back peel off the pad|Full depth, no lockout rest","c"],
+["Leg Press","legpress","mch","Beginner","Quads and glutes","Feet shoulder width on the platform|Stop before the hips curl under|Do not lock the knees out hard","c"],
+["Smith Machine Squat","squat","mch","Beginner","Quads","Feet slightly forward of the bar|Keep the ribs stacked over the hips|Controlled tempo down","c"],
+["Box Squat","squat","bb","Intermediate","Glutes and posterior chain","Sit back to the box, do not drop|Pause without relaxing|Explode off the box","c"],
+["Bulgarian Split Squat","lunge","db","Intermediate","Quads and glutes","Rear foot on the bench, front foot far enough forward|Drop straight down|Front heel stays planted","c"],
+["Walking Lunge","lunge","db","Beginner","Quads and glutes","Long stride, torso upright|Knee tracks over the mid-foot|Push through the front heel to stand","a"],
+["Barbell Reverse Lunge","lunge","bb","Beginner","Glutes","Step back, not forward, to spare the knees|Keep most of the weight on the front leg|Alternate legs each rep","a"],
+["Dumbbell Step-Up","lunge","db","Beginner","Quads and glutes","Box around knee height|Drive through the top foot, do not push off the floor|Lower slowly","a"],
+["Romanian Deadlift","hinge","bb","Intermediate","Hamstrings and glutes","Push the hips back, bar stays against the legs|Stop when the hamstrings stop stretching|Squeeze the glutes to stand","C"],
+["Dumbbell Romanian Deadlift","hinge","db","Beginner","Hamstrings","Soft knees, locked in place|Hinge, do not squat|Bells travel down the thighs","c"],
+["Single-Leg Romanian Deadlift","hinge","db","Advanced","Hamstrings and balance","Hips stay square to the floor|Free leg extends straight back|Slow and deliberate, balance is the point","a"],
+["Conventional Deadlift","hinge","bb","Advanced","Whole posterior chain","Bar over mid-foot before you pull|Chest up, lats tight|Push the floor away","C"],
+["Sumo Deadlift","hinge","bb","Intermediate","Glutes and adductors","Wide stance, toes turned out|Open the hips as you pull|Keep the bar dragging up the shins","C"],
+["Good Morning","hinge","bb","Advanced","Hamstrings and erectors","Light bar, this is a hinge drill first|Soft knees, hips travel back|Stop at torso parallel","a"],
+["Barbell Hip Thrust","hipthrust","bb","Intermediate","Glutes","Bench at the shoulder blades|Chin tucked, ribs down|Squeeze at the top for a full second","c"],
+["Machine Hip Thrust","hipthrust","mch","Beginner","Glutes","Set the pad low on the hips|Full lockout each rep|Do not arch the lower back at the top","c"],
+["Glute Bridge","hipthrust","bw","Beginner","Glutes","Heels close to the hips|Push through the heels|Pause and squeeze at the top","a"],
+["Cable Pull-Through","hinge","cbl","Beginner","Glutes and hamstrings","Face away from a low pulley|Hinge back between the legs|Finish by squeezing the glutes, not leaning back","i"],
+["Lying Leg Curl","legcurl","mch","Beginner","Hamstrings","Hips flat on the pad|Curl all the way to the glutes|Lower over three seconds","i"],
+["Seated Leg Curl","legcurl","mch","Beginner","Hamstrings","Strap the lap pad down tight|Full range, no partial reps|Pause at peak contraction","i"],
+["Nordic Hamstring Curl","legcurl","bw","Advanced","Hamstrings, eccentric","Anchor the ankles securely|Lower as slowly as you can control|Push back up with the hands if needed","i"],
+["Leg Extension","legext","mch","Beginner","Quads","Line the knees up with the pivot|Pause at full extension|Do not swing the weight up","i"],
+["Sissy Squat","legext","bw","Advanced","Rectus femoris","Rise onto the toes, knees travel forward|Keep hips and shoulders in one line|Hold a support until it feels stable","i"],
+["Standing Calf Raise","calf","mch","Beginner","Gastrocnemius","Full stretch at the bottom|Rise as high as the ankle allows|Pause two seconds at the top","i"],
+["Seated Calf Raise","calf","mch","Beginner","Soleus","Knees bent to about 90°|Slow, deep stretch at the bottom|High reps work best here","i"],
+["Dumbbell Calf Raise","calf","db","Beginner","Calves","Stand on a plate for extra range|One bell at the side, free hand for balance|Do not bounce","i"],
+["Hip Abduction Machine","hipthrust","mch","Beginner","Glute medius","Sit tall, no leaning back|Push the knees out and hold|Slow return against the stack","i"],
+["Band Lateral Walk","lunge","band","Beginner","Glute medius","Band just above the knees|Quarter-squat position the whole set|Feet never come together","i"],
+["Kettlebell Swing","swing","kb","Intermediate","Glutes and hamstrings","Hinge, do not squat|Snap the hips, the arms are just ropes|Bell floats to chest height","a"],
+["Landmine Squat","squat","bb","Beginner","Quads","Hold the sleeve at the chest|The bar path helps you stay upright|Sit straight down","a"]
+],
+
+core: [
+["Plank","plank","bw","Beginner","Deep core","Elbows under the shoulders|Squeeze the glutes and quads|Stop the set when the hips sag","t"],
+["Weighted Plank","plank","bw","Intermediate","Deep core","Plate placed on the mid-back|Keep the neck long|Breathe steadily, do not brace and hold","t"],
+["Side Plank","sideplank","bw","Beginner","Obliques","Stack the feet or stagger them|Push the bottom shoulder away from the ear|Hips stay high","t"],
+["Side Plank with Reach","sideplank","bw","Intermediate","Obliques","Thread the top arm under the torso|Rotate without dropping the hips|Slow and controlled","t"],
+["RKC Plank","plank","bw","Advanced","Whole core","Everything contracts at once|Pull the elbows toward the toes|Ten to twenty seconds is a full set","t"],
+["Hanging Leg Raise","legraise","bw","Advanced","Lower abs and hip flexors","Start from a dead hang, no swing|Curl the pelvis up, do not just lift the legs|Lower slowly","i"],
+["Hanging Knee Raise","legraise","bw","Beginner","Lower abs","Knees to chest height|Round the lower back at the top|No kipping","i"],
+["Captain's Chair Knee Raise","legraise","mch","Beginner","Lower abs","Back flat against the pad|Lift the knees past the hips|Control the way down","i"],
+["Lying Leg Raise","legraise","bw","Beginner","Lower abs","Hands under the hips for support|Stop before the lower back lifts|Lower to just above the floor","i"],
+["Reverse Crunch","crunch","bw","Beginner","Lower abs","Lift the hips off the floor, not just the legs|Small range done well beats a big swing|Exhale at the top","i"],
+["Cable Crunch","crunch","cbl","Beginner","Rectus abdominis","Kneel and set the hips as an anchor|Crunch the ribs to the pelvis|Hips do not move at all","i"],
+["Machine Crunch","crunch","mch","Beginner","Abs","Line the pivot up with the belly button|Curl the spine, do not just hinge|Two-second squeeze","i"],
+["Bicycle Crunch","rotate","bw","Beginner","Obliques","Rotate from the ribs, not the elbows|Extend the bottom leg fully|Slow beats fast here","i"],
+["Russian Twist","rotate","db","Beginner","Obliques","Lean back to about 45° and hold it|Rotate the shoulders, not just the arms|Touch the floor each side","i"],
+["Cable Woodchop","rotate","cbl","Intermediate","Obliques","Pivot the back foot as you rotate|Arms stay long|Chop high to low, then swap sides","i"],
+["Pallof Press","rotate","cbl","Intermediate","Anti-rotation core","Stand side-on to the pulley|Press straight out and resist the twist|Hold two seconds at full extension","i"],
+["Band Pallof Press","rotate","band","Beginner","Anti-rotation core","Anchor at chest height|Step out for tension|Do not let the ribs flare","i"],
+["Ab Wheel Rollout","rollout","oth","Advanced","Anti-extension core","Start from the knees|Roll only as far as you can keep the ribs down|Pull back with the abs, not the hips","i"],
+["Barbell Rollout","rollout","bb","Advanced","Anti-extension core","Loaded bar with plates that roll|Tuck the pelvis before you move|Short range first, build up","i"],
+["Dead Bug","deadbug","bw","Beginner","Deep core","Lower back pressed into the floor|Opposite arm and leg together|Exhale as you extend","i"],
+["Bird Dog","deadbug","bw","Beginner","Core stability","Reach long, do not just lift high|Hips stay level|Pause two seconds at the end range","i"],
+["Hollow Body Hold","deadbug","bw","Intermediate","Anterior chain","Lower back glued to the floor|Lower the arms and legs only as far as that allows|Breathe shallow and steady","t"],
+["V-Up","crunch","bw","Intermediate","Whole abs","Reach for the toes, meeting in the middle|Keep the legs straight if you can|Lower with control","i"],
+["Weighted Sit-Up","crunch","bw","Beginner","Abs","Hold a plate on the chest|Curl up one vertebra at a time|Do not yank on the neck","i"],
+["Toes-to-Bar","legraise","bw","Advanced","Whole abs","Hollow body position on the hang|Drive the toes to the bar|Control the descent, no swinging","i"],
+["Farmer's Carry","carry","db","Beginner","Core and grip","Stand tall, shoulders packed|Short quick steps|Do not lean away from the load","t"],
+["Suitcase Carry","carry","kb","Intermediate","Obliques","Load one side only|Resist the sideways lean|Swap hands halfway","t"],
+["Landmine Rotation","rotate","bb","Intermediate","Obliques","Arms stay long|Rotate through the hips, pivot the feet|Control the arc, do not throw it","i"],
+["Copenhagen Plank","sideplank","bw","Advanced","Adductors and obliques","Top leg on the bench, bottom leg tucked or straight|Hips lifted and level|Start with short holds","t"],
+["Stir the Pot","plank","bw","Advanced","Whole core","Forearms on a stability ball|Draw small circles|Hips stay completely still","t"]
+],
+
+fullbody: [
+["Barbell Clean and Press","ohp","bb","Advanced","Full body power","Pull the bar close to the body|Catch in a quarter squat|Press once the hips are locked out","C"],
+["Conventional Deadlift","hinge","bb","Advanced","Posterior chain","Set the lats before the pull|Push the floor away|Reset the brace every rep","C"],
+["Back Squat","squat","bb","Intermediate","Legs and trunk","Brace before unracking|Hips and knees break together|Drive through the whole foot","C"],
+["Front Squat","squat","bb","Advanced","Quads and core","Elbows up, chest tall|Sit straight down|Stay braced through the sticking point","C"],
+["Push Press","ohp","bb","Intermediate","Delts and legs","Short dip, hard drive|Head through at lockout|Reset the rack position each rep","c"],
+["Barbell Thruster","squat","bb","Intermediate","Legs and shoulders","Squat deep, then use the momentum|One continuous movement|Bar finishes over the mid-foot","c"],
+["Dumbbell Thruster","squat","db","Beginner","Legs and shoulders","Bells rest on the shoulders|Drive up and press in one motion|Breathe at the top","c"],
+["Kettlebell Swing","swing","kb","Intermediate","Glutes and conditioning","Hinge hard, snap the hips|Arms stay relaxed|Bell floats, you do not lift it","a"],
+["Turkish Get-Up","carry","kb","Advanced","Whole body control","Eyes on the bell until standing|One position at a time, no rushing|Reverse the exact sequence down","a"],
+["Renegade Row","row","db","Advanced","Back and core","Wide feet for stability|Hips do not rotate|Row to the ribs","a"],
+["Dumbbell Snatch","swing","db","Advanced","Full body power","Hinge and pull the bell close|Punch the hand through at the top|Alternate arms each rep","c"],
+["Hang Clean","hinge","bb","Advanced","Power and posterior chain","Start above the knee|Explode the hips, shrug hard|Catch with the elbows high","c"],
+["Burpee","jump","bw","Beginner","Whole body conditioning","Chest to the floor each rep|Jump the feet in, not step, once warm|Full hip extension at the top","a"],
+["Pull-Up","pull","bw","Intermediate","Back and arms","Dead hang start|Elbows drive down|Chin over the bar cleanly","c"],
+["Push-Up","press","bw","Beginner","Chest and core","Straight line from ear to ankle|Chest touches, not the chin|Full lockout","a"],
+["Walking Lunge","lunge","db","Beginner","Legs","Long stride, upright torso|Front heel drives you up|Keep the steps even","a"],
+["Barbell Bench Press","press","bb","Intermediate","Chest and triceps","Shoulder blades pinned|Bar to the lower chest|Feet driving into the floor","C"],
+["Barbell Bent-Over Row","row","bb","Intermediate","Back","Torso fixed at 45°|Pull to the belly button|No jerking with the hips","c"],
+["Standing Overhead Press","ohp","bb","Intermediate","Shoulders","Glutes squeezed, ribs down|Head through at lockout|Bar over the mid-foot","c"],
+["Goblet Squat","squat","db","Beginner","Legs","Bell at the chest|Elbows inside the knees|Sit between the heels","c"],
+["Farmer's Carry","carry","db","Beginner","Grip and trunk","Stand tall the whole distance|Short, quick steps|Set the bells down under control","t"],
+["Box Jump","jump","bw","Intermediate","Explosive legs","Land soft, knees tracking out|Step down, never jump down|Reset fully between reps","a"],
+["Sled Push","carry","mch","Intermediate","Legs and conditioning","Low body angle, arms locked|Short choppy steps|Keep the sled moving, do not stall","t"],
+["Battle Ropes","rope","oth","Intermediate","Shoulders and conditioning","Athletic stance, knees soft|Drive from the hips|Keep the waves even to the anchor","t"],
+["Bear Crawl","crawl","bw","Beginner","Core and shoulders","Knees hover just off the floor|Opposite hand and foot move together|Hips stay low and still","t"],
+["Medicine Ball Slam","swing","oth","Beginner","Whole body power","Reach tall, then throw down hard|Hinge as you slam|Catch the bounce or reset each rep","a"],
+["Rowing Machine Sprint","row","mch","Beginner","Whole body conditioning","Legs, then back, then arms|Reverse that order on the recovery|Keep the stroke rate honest","x"],
+["Inverted Row","row","bw","Beginner","Back","Bar at hip height|Body rigid, heels down|Chest to the bar","a"],
+["Landmine Squat to Press","ohp","bb","Intermediate","Legs and shoulders","Squat with the sleeve at the chest|Use the leg drive into the press|One fluid rep","c"],
+["Dumbbell Man Maker","jump","db","Advanced","Everything","Row each side in the plank|Jump the feet in, then thruster|Pace yourself, it adds up fast","a"]
+],
+
+cardio: [
+["Treadmill Intervals","run","mch","Intermediate","Aerobic power","One minute hard, one minute easy|Hold the pace, do not ride the rails|Land under the hips","x"],
+["Incline Treadmill Walk","run","mch","Beginner","Aerobic base","10 to 15 percent incline, brisk walk|Hands off the handles|Stay tall, do not hunch","x"],
+["Treadmill Tempo Run","run","mch","Intermediate","Aerobic threshold","Comfortably hard, you can say a few words|Relaxed shoulders and hands|Steady cadence throughout","x"],
+["Assault Bike Sprints","bike","mch","Advanced","Anaerobic power","20 seconds all out, 40 easy|Push and pull the handles|Do not stop pedalling in the rest","x"],
+["Assault Bike Steady","bike","mch","Beginner","Aerobic base","Conversational pace|Even effort on arms and legs|Sit upright","x"],
+["Stationary Bike Intervals","bike","mch","Beginner","Aerobic power","90 seconds hard, 90 easy|Raise resistance, not just cadence|Keep the hips still in the saddle","x"],
+["Rowing 500m Repeats","row","mch","Intermediate","Full body conditioning","Legs, back, arms in that order|Rest the same time as the piece|Hold the split within two seconds","x"],
+["Rowing Steady State","row","mch","Beginner","Aerobic base","Stroke rate around 22|Long, smooth drive|Relax the grip","x"],
+["SkiErg Intervals","row","mch","Intermediate","Upper body conditioning","Hinge at the hips on every pull|Finish the pull past the hips|Stand back up between strokes","x"],
+["Stair Climber","run","mch","Beginner","Aerobic base and glutes","Full foot on each step|Stand tall, light hands|Do not lean on the rails","x"],
+["Elliptical Intervals","bike","mch","Beginner","Low-impact aerobic","One minute hard, one minute easy|Push and pull the handles|Keep the ramp high for the glutes","x"],
+["Jump Rope","jump","oth","Beginner","Foot speed and calves","Small, quiet jumps|Turn the rope from the wrists|Elbows stay close to the ribs","x"],
+["Double Unders","jump","oth","Advanced","Coordination and conditioning","Jump a little higher, spin much faster|Stay on the balls of the feet|Relax the shoulders","x"],
+["Burpees","jump","bw","Intermediate","Whole body conditioning","Chest to floor every rep|Jump the feet in|Full extension at the top","x"],
+["Mountain Climbers","plank","bw","Beginner","Core and conditioning","Hips stay level with the shoulders|Drive the knees to the chest|Fast feet, still torso","x"],
+["High Knees","run","bw","Beginner","Aerobic and hip flexors","Knees to hip height|Stay on the balls of the feet|Pump the arms","x"],
+["Box Jumps","jump","bw","Intermediate","Explosive power","Land soft and quiet|Step down every rep|Full hip lockout on the box","x"],
+["Kettlebell Swing EMOM","swing","kb","Intermediate","Posterior chain conditioning","15 swings at the top of each minute|Rest for the remainder|Hinge hard, do not squat","x"],
+["Battle Rope Waves","rope","oth","Intermediate","Shoulders and conditioning","Alternating waves, 30 seconds on|Stay in an athletic stance|Keep the waves reaching the anchor","x"],
+["Sled Push","carry","mch","Intermediate","Legs and lungs","Low angle, arms straight|Short powerful steps|Walk back as the rest","x"],
+["Sled Drag","carry","mch","Beginner","Posterior chain and lungs","Lean back against the strap|Long, driving steps|Keep constant tension on the rope","x"],
+["Farmer's Carry Intervals","carry","db","Beginner","Grip and conditioning","Heavy for 40 metres|Rest 60 seconds between trips|Stand tall the whole way","x"],
+["Shadow Boxing","run","bw","Beginner","Aerobic and shoulders","Stay light on the feet|Rotate through the hips on each punch|Hands back to the chin","x"],
+["Jumping Jacks","jump","bw","Beginner","Aerobic base","Full range with the arms|Land softly on the balls of the feet|Steady rhythm","x"],
+["Bear Crawl Shuttle","crawl","bw","Intermediate","Core and conditioning","Knees hover, hips low|Ten metres out and back|Opposite hand and foot together","x"],
+["Sprint Intervals","run","bw","Advanced","Top-end speed","Build into the sprint, do not jerk off the line|Full recovery between efforts|Stop the set when the times drop off","x"],
+["Squat Jumps","jump","bw","Intermediate","Explosive legs","Sink to a quarter squat|Jump as high as you can|Absorb the landing softly","x"],
+["Fast Step-Ups","lunge","bw","Beginner","Legs and lungs","Knee-height box|Alternate the lead leg each rep|Drive through the top foot","x"],
+["Wall Ball","squat","oth","Intermediate","Legs, shoulders, lungs","Squat to full depth|Use the leg drive to throw|Catch and go straight into the next rep","x"],
+["Devil's Press","jump","db","Advanced","Full body conditioning","Burpee down with the bells|Swing them overhead in one arc|Pace it, this one is brutal","x"]
+]
+};
+
+/* ---------- warm-up pool: general + per-group ---------- */
+var WARMUP = {
+general: [
+["Easy Bike or Row","bike",180,"Raise the core temperature, nothing more"],
+["Brisk Treadmill Walk","run",180,"Incline 5 percent, easy breathing"],
+["Rowing Machine, Easy Pace","erg",180,"Long strokes, low rate"],
+["Jump Rope, Easy","jump",120,"Small hops, loose shoulders"],
+["Cat-Cow","stretch",60,"Move one vertebra at a time"],
+["World's Greatest Stretch","stretch",90,"Lunge, rotate, reach up"],
+["Leg Swings, Front and Side","stretch",60,"Controlled, no bouncing"],
+["Hip Circles","stretch",60,"Big slow circles both directions"],
+["Arm Circles","stretch",60,"Small to large, both directions"],
+["Band Pull-Apart","rearfly",60,"Light band, squeeze the blades"],
+["Scapular Push-Up","press",60,"Protract and retract, elbows locked"],
+["Bodyweight Squat","squat",90,"Slow, sit as deep as feels good"],
+["Glute Bridge","hipthrust",60,"Squeeze hard at the top"],
+["Dead Bug","deadbug",60,"Ribs down, low back flat"],
+["Ankle Rocks","stretch",60,"Knee over the toe, heel down"]
+],
+chest:[["Push-Up, Slow Tempo","press",60,"Three seconds down"],["Band Chest Press","press",60,"Light tension, full range"],["Doorway Pec Stretch","stretch",60,"Elbow at shoulder height"],["Empty Bar Bench Press","press",90,"Two light sets to groove the path"]],
+back:[["Scapular Pull-Up","pull",60,"Hang and shrug down only"],["Band Lat Pulldown","pull",60,"Light band, feel the lats"],["Bird Dog","deadbug",60,"Reach long, hips level"],["Light Cable Row","row",90,"Two easy sets"]],
+shoulders:[["Wall Slide","ohp",60,"Forearms on the wall, slide up"],["Band External Rotation","rearfly",60,"Elbow tucked at the side"],["Empty Bar Overhead Press","ohp",90,"Groove the bar path"],["Face Pull, Light","rearfly",60,"High reps, slow"]],
+biceps:[["Band Curl, Light","curl",60,"High reps to get blood in"],["Wrist Circles","stretch",45,"Both directions"],["Light Dumbbell Curl","curl",60,"Half the working weight"],["Elbow Flexion Stretch","stretch",45,"Straighten the arm and hold"]],
+triceps:[["Band Pushdown, Light","pushdown",60,"High reps, feel the pump"],["Overhead Triceps Stretch","stretch",45,"Gentle, both sides"],["Push-Up, Narrow","press",60,"Elbows close"],["Elbow Circles","stretch",45,"Warm the joint first"]],
+legs:[["Bodyweight Lunge","lunge",90,"Slow and controlled"],["Band Lateral Walk","lunge",60,"Wake the glute medius"],["Couch Stretch, Light","stretch",60,"30 seconds each side"],["Empty Bar Squat","squat",90,"Two sets, full depth"],["Calf Raise, Bodyweight","calf",60,"Full range both feet"]],
+core:[["Dead Bug, Slow","deadbug",60,"Exhale on the extension"],["Bird Dog","deadbug",60,"Pause at the end range"],["Cat-Cow","stretch",60,"Full spinal range"],["Side Plank, Short Hold","sideplank",45,"20 seconds each side"]],
+fullbody:[["Inchworm Walkout","crawl",60,"Walk the hands out and back"],["Bodyweight Squat","squat",60,"Sit deep"],["Push-Up","press",60,"Steady tempo"],["Band Pull-Apart","rearfly",60,"Open the chest"],["Empty Bar Complex","ohp",120,"Row, clean, press, squat"]],
+cardio:[["Easy Walk","run",180,"Build the heart rate gradually"],["Leg Swings","stretch",60,"Front to back, then side"],["High Knees, Easy","run",45,"Half speed"],["Ankle Bounces","jump",45,"Stay on the balls of the feet"],["A-Skips","run",60,"Tall posture, quick ground contact"]]
+};
+
+/* ---------- cooldown pool ---------- */
+var COOLDOWN = {
+general:[
+["Child's Pose","stretch",60,"Sink the hips back, breathe into the ribs"],
+["Standing Forward Fold","stretch",60,"Soft knees, let the head hang"],
+["Supine Twist","stretch",90,"45 seconds each side"],
+["Cat-Cow, Slow","stretch",60,"Match the movement to the breath"],
+["Box Breathing","stretch",90,"In four, hold four, out four, hold four"],
+["Easy Walk to Cool Down","run",120,"Let the heart rate settle"],
+["Foam Roll Upper Back","stretch",90,"Slow passes, pause on tight spots"],
+["Foam Roll Quads","stretch",90,"45 seconds each leg"]
+],
+chest:[["Doorway Pec Stretch","stretch",90,"45 seconds each side"],["Foam Roll Pecs","stretch",60,"Small circles near the shoulder"],["Overhead Reach Stretch","stretch",60,"Open the front of the chest"]],
+back:[["Lat Stretch on a Rack","stretch",90,"Hinge and sink, 45 seconds a side"],["Seated Twist","stretch",60,"Rotate from the mid back"],["Hanging Decompression","stretch",60,"Relaxed dead hang"]],
+shoulders:[["Cross-Body Shoulder Stretch","stretch",60,"30 seconds each arm"],["Sleeper Stretch","stretch",90,"Gentle, do not force it"],["Foam Roll Upper Traps","stretch",60,"Slow and light"]],
+biceps:[["Wall Biceps Stretch","stretch",60,"Palm on the wall, turn away"],["Forearm Flexor Stretch","stretch",60,"30 seconds each side"],["Shake Out the Arms","stretch",45,"Loosen the grip"]],
+triceps:[["Overhead Triceps Stretch","stretch",60,"30 seconds each side"],["Towel Shoulder Stretch","stretch",60,"Gentle range"],["Elbow Mobility Circles","stretch",45,"Both directions"]],
+legs:[["Couch Stretch","stretch",120,"60 seconds each side"],["Seated Hamstring Stretch","stretch",90,"Hinge from the hips"],["Figure-Four Glute Stretch","stretch",90,"45 seconds each side"],["Calf Stretch on a Step","stretch",60,"Heel drops below the step"],["90/90 Hip Stretch","stretch",90,"Sit tall through the spine"]],
+core:[["Cobra Stretch","stretch",60,"Gentle extension, hips down"],["Child's Pose","stretch",60,"Long slow breaths"],["Side Body Stretch","stretch",60,"30 seconds each side"]],
+fullbody:[["Downward Dog","stretch",60,"Pedal the heels"],["Couch Stretch","stretch",90,"45 seconds each side"],["Thread the Needle","stretch",60,"Open the upper back"],["Supine Twist","stretch",90,"Let the knees fall heavy"]],
+cardio:[["Easy Walk","run",180,"Bring the heart rate down slowly"],["Calf Stretch","stretch",60,"30 seconds each leg"],["Hip Flexor Stretch","stretch",90,"45 seconds each side"],["Box Breathing","stretch",90,"Slow the breath right down"]]
+};
+
+var GROUPS = [
+ ["chest","Chest"],
+ ["back","Back"],
+ ["shoulders","Shoulders"],
+ ["biceps","Biceps"],
+ ["triceps","Triceps"],
+ ["legs","Legs (Quads / Hams / Glutes)"],
+ ["core","Core & Abs"],
+ ["fullbody","Full Body"],
+ ["cardio","Cardio & Conditioning"]
+];
+
+var EQUIP = {bb:"Barbell",db:"Dumbbell",kb:"Kettlebell",cbl:"Cable",mch:"Machine",bw:"Bodyweight",band:"Resistance band",oth:"Other kit"};
+
+/* ---------- advanced additions, appended to each group ---------- */
+var ADV = {
+
+chest: [
+["Larsen Press","press","bb","Advanced","Pecs without leg drive","Feet up on the bench, no leg drive at all|Every bit of the press comes from the chest|Go lighter than your normal bench","c"],
+["Paused Bench Press","press","bb","Advanced","Pecs out of the hole","Three full seconds motionless on the chest|Stay tight, do not relax into the pause|Explode off the pause without bouncing","C"],
+["Ring Push-Up","press","bw","Advanced","Chest and stabilisers","Turn the rings out at lockout|Keep the rings pressed against the ribs|Body stays one rigid line","a"],
+["Clap Push-Up","press","bw","Advanced","Explosive chest","Push hard enough to leave the floor|Land with soft elbows|Stop the set the moment the height drops","a"],
+["1.5-Rep Incline Dumbbell Press","incline","db","Advanced","Upper pecs under long tension","Full press, half down, half up, then full down|That whole sequence is one rep|Expect to halve your usual weight","a"],
+["Incline Cable Fly","fly","cbl","Advanced","Upper pecs","Bench set inside the cable rack at 30°|Constant tension top to bottom|Stop the stretch where the shoulder feels safe","i"]
+],
+
+back: [
+["Deficit Deadlift","hinge","bb","Advanced","Posterior chain off the floor","Stand on a 5cm plate, no higher to start|Set the back before the bar moves|Drop the hips a touch more than usual","C"],
+["Snatch-Grip Deadlift","hinge","bb","Advanced","Upper back and traps","Grip out at the rings|Upper back will round first, so brace it hard|Much lighter than a conventional pull","C"],
+["Seal Row","row","bb","Advanced","Mid back, zero cheating","Chest on a raised bench, feet off the floor|No torso movement is possible, which is the point|Pull to the lower ribs and pause","c"],
+["Kroc Row","row","db","Advanced","Lats and grip","Heavy single-arm row for high reps|A little body English is allowed here|Use straps once the grip is the limit","c"],
+["L-Sit Pull-Up","pull","bw","Advanced","Lats and core together","Legs held straight out the whole set|No swinging at all|Drop to knee-tuck if the legs sag","c"],
+["Archer Pull-Up","pull","bw","Advanced","Lats, one side at a time","Pull toward one hand, other arm straight|Alternate sides each rep|A step toward the one-arm chin","a"]
+],
+
+shoulders: [
+["Handstand Push-Up","ohp","bw","Advanced","Delts and triceps","Kick up against a wall, hands slightly wide|Lower the crown to the floor under control|Use a cushion to reduce the range at first","c"],
+["Bradford Press","ohp","bb","Advanced","Front and side delts","Press to just over the head, then behind|Never lock out, tension stays on|Light bar only, this one humbles people","a"],
+["Viking Press","ohp","mch","Advanced","Delts, neutral grip","Neutral grip is friendlier on the shoulder|Ribs down, do not lean back|Drive straight up through the handles","c"],
+["Powell Raise","rearfly","db","Advanced","Rear delts and cuff","Lie on your side on an incline bench|Raise with a straight arm, thumb up|Very light, this is precision work","i"],
+["Prone Incline Y-Raise","rearfly","db","Advanced","Lower traps and rear delts","Chest on a 30° bench|Raise the arms into a Y, thumbs up|Pause two seconds at the top of every rep","i"],
+["Lateral Raise 21s","latraise","db","Advanced","Side delts","Seven reps bottom half, seven top half|Then seven full reps, no rest|Go far lighter than you think","i"]
+],
+
+biceps: [
+["Weighted Chin-Up","pull","bw","Advanced","Biceps under heavy load","Add the belt only when 10 strict reps are easy|Full dead hang between reps|Lead with the chest, not the chin","c"],
+["Cheat Curl with Slow Negative","curl","bb","Advanced","Biceps eccentric overload","A little hip drive to get it up|Five full seconds to lower it|The negative is the whole exercise","a"],
+["1.5-Rep Preacher Curl","curl","bb","Advanced","Short head","Full curl, half down, half up, then all the way down|That is one rep|Never rest at the bottom","i"],
+["Eccentric-Only Barbell Curl","curl","bb","Advanced","Biceps eccentric strength","Use both arms to lift, one to lower|Six seconds down every rep|Expect real soreness, use it sparingly","i"],
+["Waiter Curl","curl","db","Advanced","Biceps peak","Hold one bell flat on the palms like a tray|Elbows glued to the ribs|Slow all the way through","i"],
+["Fat-Grip Hammer Curl","hammer","db","Advanced","Brachialis and grip","Thick grips or a towel wrapped round the handle|The forearms will fail first, that is expected|Keep the wrists neutral","i"]
+],
+
+triceps: [
+["Ring Dip","dip","bw","Advanced","Triceps and stabilisers","Turn the rings out hard at the top|Keep the torso upright|Master bar dips first","c"],
+["Rolling Dumbbell Extension","skull","db","Advanced","Long head","Roll the bells past the head at the bottom|Then extend without letting the elbows drift|Smooth, no jerking","a"],
+["Dead-Stop Close-Grip Press","press","bb","Advanced","Triceps from a stop","Set the pins so the bar rests on the chest line|Fully relax the bar on the pins for a beat|Press with no stretch reflex at all","c"],
+["Seated Overhead EZ-Bar Extension","overext","bb","Advanced","Long head at full stretch","Sit upright, elbows narrow and high|Deep stretch behind the head|Stop if the elbows complain","a"],
+["1.5-Rep Rope Pushdown","pushdown","cbl","Advanced","Lateral head","Full lockout, half up, back down, then all the way|Elbows never move|Split the rope at every lockout","i"],
+["Weighted Bench Dip","dip","bw","Advanced","Triceps","Feet elevated, plate on the lap|Only go as deep as the shoulder allows|Lock out fully at the top","a"]
+],
+
+legs: [
+["Paused Back Squat","squat","bb","Advanced","Quads out of the hole","Three seconds motionless at the bottom|Stay braced, do not sink into the pause|Drive up without a bounce","C"],
+["Zercher Squat","squat","bb","Advanced","Quads, upper back and core","Bar in the crook of the elbows, use a pad|Stay upright and brace hard|Start far lighter than a back squat","C"],
+["Pistol Squat","lunge","bw","Advanced","Single-leg strength and mobility","Free leg straight out in front|Sit back and down, heel planted|Hold a counterweight to make it easier","a"],
+["Deficit Reverse Lunge","lunge","db","Advanced","Glutes at long length","Stand on a low platform|Step back and drop below the front foot|Push through the front heel to stand","a"],
+["Snatch-Grip Romanian Deadlift","hinge","bb","Advanced","Hamstrings and upper back","Wide grip out at the rings|Hips back, bar dragging the thighs|Upper back works as hard as the hamstrings","c"],
+["Reverse Nordic Curl","legext","bw","Advanced","Quads at long length","Kneel tall, squeeze the glutes|Lean back with the hips locked out|Only go as far as you can return from","i"],
+["Single-Leg Press","legpress","mch","Advanced","Quads and glutes, one side","Foot centred on the platform|Do not let the hip curl off the pad|Match the reps side to side","a"]
+],
+
+core: [
+["Dragon Flag","legraise","bw","Advanced","Whole anterior chain","Grip behind the head, shoulders anchored|Body stays one straight line, hips do not pike|Lower slowly, that is the hard half","i"],
+["Hanging Windshield Wiper","rotate","bw","Advanced","Obliques","Legs up to the bar, then sweep side to side|Control the arc, do not swing|Stop when the legs start to drop","i"],
+["Standing Ab Wheel Rollout","rollout","oth","Advanced","Anti-extension core","From the feet, not the knees|Keep the ribs pulled down the whole way|Only roll out as far as you can pull back","i"],
+["L-Sit Hold","deadbug","bw","Advanced","Whole core and hip flexors","Push the shoulders down away from the ears|Legs straight and locked|Ten good seconds beats thirty sloppy ones","t"],
+["Body Saw","plank","bw","Advanced","Anti-extension core","Feet on sliders in a forearm plank|Push back and pull in a few centimetres|Hips never sag","t"],
+["Weighted Hanging Knee Raise","legraise","bw","Advanced","Lower abs","Bell held between the feet|Curl the pelvis, do not just lift|No swinging between reps","i"]
+],
+
+fullbody: [
+["Overhead Squat","squat","bb","Advanced","Whole body, mobility limited","Bar locked out overhead, wide grip|Squat with the bar behind the ears|Empty bar first, always","C"],
+["Squat Clean","hinge","bb","Advanced","Full body power","Pull the bar close, then drop under it|Catch in a full front squat|Technique before load, every time","C"],
+["Barbell Bear Complex","ohp","bb","Advanced","Everything at once","Clean, front squat, press, back squat, press|That whole sequence is one rep|Bar never touches the floor mid-round","c"],
+["Dumbbell Clean and Jerk","ohp","db","Advanced","Full body power","Clean to the shoulder, dip and drive overhead|Lock the elbow before you stand tall|Alternate arms each rep","c"],
+["Burpee Pull-Up","jump","bw","Advanced","Whole body conditioning","Chest to floor, then jump straight to the bar|Chin over the bar every rep|Pace it, this spikes the heart rate fast","a"]
+],
+
+cardio: [
+["Tabata Assault Bike","bike","mch","Advanced","Anaerobic capacity","20 seconds all out, 10 seconds easy|Eight rounds, four minutes total|If round eight matches round one you went too easy","x"],
+["Norwegian 4x4 Intervals","run","mch","Advanced","Aerobic ceiling","Four minutes hard, three minutes easy, four rounds|Hard means you can manage a word or two|Do not start faster than you can hold","x"],
+["Hill Sprints","run","bw","Advanced","Speed and power","Find a 30 to 40 metre slope|Walk down as the rest|Stop when the times slow, not when you are tired","x"],
+["Rowing 2k Time Trial","row","mch","Advanced","Aerobic and mental","Set the first 500 slower than feels right|Hold the split, do not chase it|Empty the tank over the last 300","x"],
+["EMOM Burpee Box Jump Over","jump","bw","Advanced","Conditioning under fatigue","Set a rep target you can hold every minute|Step down, do not rebound|Cut the reps rather than the rounds","x"],
+["Sled Sprint Repeats","carry","mch","Advanced","Speed endurance","Heavy enough to slow you, light enough to run|20 metres, walk back, repeat|Stay low and drive the knees","x"]
+]
+};
+
+/* merge the advanced movements onto the end of each group */
+Object.keys(ADV).forEach(function(g){ RAW[g] = RAW[g].concat(ADV[g]) });
+
+/* build the indexed library */
+var LIB = {};
+Object.keys(RAW).forEach(function(g){
+  LIB[g] = RAW[g].map(function(r,i){
+    return {
+      id: g+"-"+i,
+      name: r[0], pattern: r[1], equip: r[2], diff: r[3],
+      target: r[4], cues: r[5].split("|"), role: r[6], group: g
+    };
+  });
+});
+</script>
+<script>/* ============================================================
+   INLINE SVG ILLUSTRATIONS
+   A stick-figure renderer. Each movement pattern is a set of
+   joint coordinates; equipment is drawn on top at the hands.
+   Nothing is fetched, so nothing can break offline.
+   viewBox: 0 0 200 140   ·   floor at y = 126
+   ============================================================ */
+
+var POSE = {
+/* keys: hd head · nk neck · hp hip · el/hn elbow+hand · kn/ft knee+foot
+   *2 = far-side limb (drawn dimmer) · p = props · e = equipment anchor
+   c = cable/band anchor point · a = equipment angle in degrees        */
+
+press:     {hd:[42,74],nk:[58,78],hp:[106,80],el:[60,58],hn:[62,38],kn:[130,86],ft:[126,126],p:["bench","floor"],e:[62,38],c:[186,20]},
+incline:   {hd:[50,56],nk:[64,64],hp:[112,86],el:[72,48],hn:[78,30],kn:[136,92],ft:[132,126],p:["incline","floor"],e:[78,30],c:[186,20]},
+fly:       {hd:[100,24],nk:[100,44],hp:[100,84],el:[76,52],hn:[56,50],el2:[124,52],hn2:[144,50],kn:[92,104],ft:[90,126],kn2:[108,104],ft2:[110,126],p:["floor"],front:1,e:[56,50],c:[10,22],c2:[190,22]},
+pullover:  {hd:[54,74],nk:[68,78],hp:[112,80],el:[54,62],hn:[36,54],kn:[136,86],ft:[132,126],p:["bench","floor"],e:[36,54],c:[14,22],a:90},
+dip:       {hd:[92,26],nk:[94,44],hp:[96,80],el:[112,54],hn:[118,72],kn:[84,102],ft:[62,106],p:["dipbars","floor"],e:null,self:1},
+ohp:       {hd:[96,30],nk:[96,48],hp:[96,84],el:[106,44],hn:[104,20],kn:[98,104],ft:[98,126],p:["floor"],e:[104,20],c:[186,120]},
+latraise:  {hd:[100,24],nk:[100,44],hp:[100,84],el:[76,50],hn:[56,46],el2:[124,50],hn2:[144,46],kn:[92,104],ft:[90,126],kn2:[108,104],ft2:[110,126],p:["floor"],front:1,e:[56,46],c:[10,118],c2:[190,118]},
+frontraise:{hd:[92,26],nk:[94,44],hp:[96,82],el:[116,54],hn:[138,46],kn:[96,104],ft:[96,126],p:["floor"],e:[138,46],c:[186,118]},
+rearfly:   {hd:[62,50],nk:[76,58],hp:[116,68],el:[70,80],hn:[52,88],kn:[126,96],ft:[120,126],p:["floor"],e:[52,88],c:[186,50],bandTo:[104,92]},
+shrug:     {hd:[96,26],nk:[96,42],hp:[96,80],el:[102,60],hn:[104,80],kn:[98,104],ft:[98,126],p:["floor"],e:[104,80]},
+row:       {hd:[52,52],nk:[66,60],hp:[110,70],el:[68,84],hn:[70,102],kn:[126,96],ft:[120,126],p:["floor"],e:[70,102],c:[188,86]},
+pull:      {hd:[96,44],nk:[96,58],hp:[96,92],el:[100,40],hn:[100,18],kn:[88,114],ft:[72,120],p:["highbar"],e:[100,18],c:[100,10]},
+curl:      {hd:[96,26],nk:[96,44],hp:[96,80],el:[104,64],hn:[112,50],kn:[98,104],ft:[98,126],p:["floor"],e:[112,50],c:[186,118]},
+hammer:    {hd:[96,26],nk:[96,44],hp:[96,80],el:[104,64],hn:[114,52],kn:[98,104],ft:[98,126],p:["floor"],e:[114,52],c:[186,118]},
+pushdown:  {hd:[94,26],nk:[96,44],hp:[96,80],el:[106,62],hn:[110,82],kn:[98,104],ft:[98,126],p:["floor"],e:[110,82],c:[186,16]},
+overext:   {hd:[96,30],nk:[96,48],hp:[96,84],el:[108,38],hn:[86,30],kn:[98,104],ft:[98,126],p:["floor"],e:[86,30],c:[14,112]},
+skull:     {hd:[44,74],nk:[60,78],hp:[108,80],el:[62,56],hn:[46,48],kn:[132,86],ft:[128,126],p:["bench","floor"],e:[46,48]},
+squat:     {hd:[80,42],nk:[86,58],hp:[80,90],el:[80,62],hn:[92,54],kn:[116,96],ft:[104,126],p:["floor"],e:[92,54],rack:1,self:1},
+legpress:  {hd:[36,84],nk:[52,88],hp:[92,92],el:[54,106],hn:[42,110],kn:[120,70],ft:[144,50],p:["floor","sled"],e:null,self:1},
+lunge:     {hd:[86,30],nk:[88,48],hp:[88,80],el:[94,64],hn:[96,82],kn:[112,100],ft:[112,126],kn2:[64,102],ft2:[46,124],p:["floor"],e:[96,82]},
+hinge:     {hd:[54,50],nk:[68,58],hp:[112,68],el:[70,82],hn:[72,102],kn:[122,96],ft:[116,126],p:["floor"],e:[72,102]},
+legcurl:   {hd:[40,72],nk:[56,76],hp:[104,80],el:[58,92],hn:[46,96],kn:[128,80],ft:[144,56],p:["bench","floor"],e:null,mpad:[146,58],self:1},
+legext:    {hd:[60,40],nk:[64,58],hp:[72,86],el:[68,74],hn:[58,86],kn:[106,88],ft:[136,72],p:["seat","floor"],e:null,mpad:[138,74],self:1},
+calf:      {hd:[96,22],nk:[96,40],hp:[96,76],el:[102,58],hn:[104,78],kn:[98,100],ft:[100,118],p:["step","floor"],e:[104,78],self:1},
+hipthrust: {hd:[44,68],nk:[58,74],hp:[102,78],el:[64,90],hn:[78,84],kn:[126,80],ft:[126,126],p:["bench","floor"],e:[102,68]},
+swing:     {hd:[60,48],nk:[74,56],hp:[114,66],el:[86,74],hn:[102,88],kn:[124,94],ft:[118,126],p:["floor"],e:[102,88]},
+plank:     {hd:[44,86],nk:[60,90],hp:[114,98],el:[58,110],hn:[44,120],kn:[142,108],ft:[162,120],p:["floor"],e:null},
+sideplank: {hd:[48,72],nk:[62,80],hp:[110,104],el:[60,102],hn:[50,120],kn:[140,112],ft:[166,120],p:["floor"],e:null},
+crunch:    {hd:[52,84],nk:[66,92],hp:[110,108],el:[60,100],hn:[52,92],kn:[132,84],ft:[152,110],p:["floor"],e:null,c:[16,20]},
+legraise:  {hd:[92,44],nk:[94,58],hp:[96,92],el:[98,40],hn:[100,18],kn:[126,80],ft:[152,62],p:["highbar"],e:null},
+rotate:    {hd:[92,26],nk:[94,44],hp:[96,80],el:[114,54],hn:[134,58],kn:[88,102],ft:[84,126],kn2:[104,102],ft2:[110,126],p:["floor"],e:[134,58],c:[188,58]},
+deadbug:   {hd:[44,96],nk:[58,98],hp:[104,100],el:[56,80],hn:[50,62],kn:[122,78],ft:[136,92],kn2:[128,106],ft2:[158,106],p:["floor"],e:null},
+rollout:   {hd:[70,60],nk:[82,68],hp:[118,86],el:[70,86],hn:[52,104],kn:[132,110],ft:[154,116],p:["floor"],e:[52,104],wheel:1},
+carry:     {hd:[96,22],nk:[96,40],hp:[96,76],el:[102,58],hn:[104,78],kn:[86,102],ft:[78,126],kn2:[108,100],ft2:[116,124],p:["floor"],e:[104,78]},
+run:       {hd:[92,22],nk:[94,40],hp:[96,72],el:[110,54],hn:[116,38],el2:[78,56],hn2:[70,70],kn:[122,88],ft:[132,110],kn2:[74,96],ft2:[58,116],p:["floor"],e:null,self:1,tread:1},
+bike:      {hd:[96,34],nk:[104,50],hp:[120,74],el:[94,58],hn:[80,58],kn:[110,94],ft:[100,104],kn2:[118,96],ft2:[112,112],p:["bikeframe","floor"],e:null,self:1},
+erg:       {hd:[134,54],nk:[124,70],hp:[112,96],el:[110,74],hn:[92,78],kn:[80,96],ft:[56,102],p:["ergframe","floor"],e:null,self:1},
+jump:      {hd:[92,22],nk:[94,40],hp:[96,70],el:[110,28],hn:[118,12],kn:[116,86],ft:[98,96],kn2:[84,88],ft2:[68,98],p:["box","floor"],e:null},
+rope:      {hd:[74,36],nk:[80,52],hp:[94,80],el:[100,64],hn:[116,60],kn:[114,100],ft:[110,126],kn2:[80,102],ft2:[74,126],p:["floor","ropes"],e:null},
+crawl:     {hd:[50,74],nk:[64,80],hp:[112,84],el:[64,100],hn:[58,118],kn:[126,102],ft:[136,118],p:["floor"],e:null},
+stretch:   {hd:[68,62],nk:[80,70],hp:[112,96],el:[92,80],hn:[74,88],kn:[142,102],ft:[168,106],p:["floor"],e:null}
+};
+
+var ALIAS = {erg:"erg"};
+
+function svgLine(a,b,cls){
+  return '<path class="'+cls+'" d="M'+a[0]+' '+a[1]+'L'+b[0]+' '+b[1]+'"/>';
+}
+
+function drawProps(p,pose,ex){
+  var s="";
+  if(pose.tread && ex && ex.equip==="mch") p=(p||[]).concat(["tread"]);
+  (p||[]).forEach(function(n){
+    if(n==="floor")   s+='<path class="gp" d="M6 126H194"/>';
+    if(n==="bench")   s+='<rect class="pr" x="34" y="82" width="104" height="9" rx="3"/><path class="pr" d="M44 91v26M128 91v26"/>';
+    if(n==="incline") s+='<path class="pr" d="M40 96L118 60l8 14-70 34z"/><path class="pr" d="M52 100v22M116 84v38"/>';
+    if(n==="dipbars") s+='<path class="pr" d="M96 72h48M96 79h48M142 72v46M142 79h-2"/>';
+    if(n==="highbar") s+='<path class="pr" d="M40 16h120M52 16v-8M148 16v-8"/>';
+    if(n==="seat")    s+='<rect class="pr" x="44" y="86" width="46" height="8" rx="3"/><path class="pr" d="M48 60v28M56 94v24M84 94v24"/>';
+    if(n==="box")     s+='<rect class="pr" x="58" y="106" width="84" height="20" rx="3"/>';
+    if(n==="step")    s+='<rect class="pr" x="84" y="118" width="42" height="8" rx="2"/>';
+    if(n==="sled")    s+='<path class="pr" d="M118 96L176 32"/><path class="eq" d="M131 34L157 66"/><path class="pr" d="M150 24l14 12"/>';
+    if(n==="bikeframe") s+='<circle class="pr" cx="52" cy="96" r="18"/><path class="pr" d="M52 96L82 58M52 96l52 8M104 104L124 78M76 54h14"/><circle class="pr" cx="104" cy="104" r="7"/><rect class="pr" x="112" y="72" width="24" height="7" rx="3"/><path class="pr" d="M124 79v40M52 114v12"/>';
+    if(n==="ergframe") s+='<path class="pr" d="M56 112h116"/><circle class="pr" cx="40" cy="92" r="16"/><rect class="pr" x="102" y="102" width="24" height="8" rx="3"/><path class="pr" d="M50 106h14M40 108v18M168 112v14"/><path class="eq" d="M92 78L52 90"/><path class="eq" d="M86 72v12"/>';
+    if(n==="tread")   s+='<rect class="pr" x="24" y="116" width="152" height="10" rx="4"/><path class="pr" d="M162 116V62M162 70h-30"/>';
+    if(n==="ropes")   s+='<path class="rp" d="M118 60c14-10 18 10 30 0s18 10 32 2"/><path class="rp" d="M118 64c14 10 18-8 30 2s18-8 32-2"/>';
+  });
+  if(pose.rack) s+='<path class="pr" d="M150 30v96M150 44h-14"/>';
+  if(pose.mpad) s+='<rect class="eq" x="'+(pose.mpad[0]-6)+'" y="'+(pose.mpad[1]-5)+'" width="13" height="16" rx="5"/>';
+  return s;
+}
+
+function plate(x,y,vert){
+  return vert
+    ? '<rect class="eq f" x="'+(x-13)+'" y="'+(y-5)+'" width="26" height="10" rx="4"/>'
+    : '<rect class="eq f" x="'+(x-5)+'" y="'+(y-13)+'" width="10" height="26" rx="4"/>';
+}
+
+function drawEquip(ex,pose){
+  var e=pose.e, s="", q=ex.equip;
+  if(!e) e=pose.hn;
+  var x=e[0], y=e[1];
+  var vert = pose.a===90;
+
+  if(q==="bb"){
+    if(vert) s+='<path class="eq" d="M'+x+' '+(y-30)+'V'+(y+30)+'"/>'+plate(x,y-27,1)+plate(x,y+27,1);
+    else     s+='<path class="eq" d="M'+(x-31)+' '+y+'H'+(x+31)+'"/>'+plate(x-28,y)+plate(x+28,y);
+  }
+  else if(q==="db"){
+    var pts = pose.front ? [pose.hn,pose.hn2] : [e];
+    pts.forEach(function(h){
+      if(!h) return;
+      s+='<path class="eq" d="M'+(h[0]-11)+' '+h[1]+'H'+(h[0]+11)+'"/>'
+        +'<rect class="eq f" x="'+(h[0]-15)+'" y="'+(h[1]-8)+'" width="7" height="16" rx="2.5"/>'
+        +'<rect class="eq f" x="'+(h[0]+8)+'" y="'+(h[1]-8)+'" width="7" height="16" rx="2.5"/>';
+    });
+  }
+  else if(q==="kb"){
+    s+='<path class="eq" d="M'+(x-7)+' '+(y+2)+'a7 8 0 0 1 14 0"/>'
+      +'<circle class="eq f" cx="'+x+'" cy="'+(y+13)+'" r="10"/>';
+  }
+  else if(q==="cbl"){
+    var an=pose.c||[186,20];
+    s+='<path class="cb" d="M'+x+' '+y+'L'+an[0]+' '+an[1]+'"/><circle class="eq f" cx="'+an[0]+'" cy="'+an[1]+'" r="5"/>';
+    if(pose.c2 && pose.hn2){
+      s+='<path class="cb" d="M'+pose.hn2[0]+' '+pose.hn2[1]+'L'+pose.c2[0]+' '+pose.c2[1]+'"/><circle class="eq f" cx="'+pose.c2[0]+'" cy="'+pose.c2[1]+'" r="5"/>';
+    }
+    var sx = an[0]>100?178:14;
+    s+='<rect class="pr" x="'+(sx-11)+'" y="'+(an[1]<70?58:34)+'" width="22" height="48" rx="4"/>'
+      +'<path class="pr" d="M'+(sx-11)+' '+(an[1]<70?74:50)+'h22M'+(sx-11)+' '+(an[1]<70?90:66)+'h22"/>'
+      +'<path class="eq" d="M'+(x)+' '+(y)+'m-9 0h18"/>';
+  }
+  else if(q==="band"){
+    var ab=pose.bandTo||pose.c||[186,120];
+    var mx=(x+ab[0])/2, my=(y+ab[1])/2;
+    s+='<path class="bd" d="M'+x+' '+y+'Q'+(mx+8)+' '+(my-10)+' '+ab[0]+' '+ab[1]+'"/>'
+      +'<path class="bd" d="M'+x+' '+(y+3)+'Q'+(mx+8)+' '+(my-6)+' '+ab[0]+' '+(ab[1]+3)+'"/>';
+    if(pose.c2 && pose.hn2){
+      var b2=pose.c2, m2x=(pose.hn2[0]+b2[0])/2, m2y=(pose.hn2[1]+b2[1])/2;
+      s+='<path class="bd" d="M'+pose.hn2[0]+' '+pose.hn2[1]+'Q'+(m2x-8)+' '+(m2y-10)+' '+b2[0]+' '+b2[1]+'"/>';
+    }
+  }
+  else if(q==="mch"){
+    if(!pose.self){
+      s+='<path class="pr" d="M180 16v110M180 34h-24"/><rect class="pr" x="169" y="48" width="22" height="46" rx="4"/><path class="pr" d="M169 64h22M169 80h22"/>';
+      if(pose.e) s+='<path class="eq" d="M'+(x-11)+' '+y+'h22"/>';
+    } else if(pose.e){
+      s+='<path class="eq" d="M'+(x-11)+' '+y+'h22"/>';
+    }
+  }
+  else if(q==="oth"){
+    if(pose.wheel) s+='<circle class="eq" cx="'+x+'" cy="'+y+'" r="9"/><path class="eq" d="M'+(x-13)+' '+y+'h26"/>';
+    else s+='<circle class="eq f" cx="'+x+'" cy="'+y+'" r="10"/>';
+  }
+  return s;
+}
+
+/* main renderer */
+function exSVG(ex){
+  var key = ex.pattern;
+  if(ex.group==="cardio" && key==="row") key="erg";
+  var pose = POSE[key] || POSE.stretch;
+  var far  = '';
+  var near = '';
+
+  if(pose.kn2) far += svgLine(pose.hp,pose.kn2,"lb")+svgLine(pose.kn2,pose.ft2,"lb");
+  if(pose.el2) far += svgLine(pose.nk,pose.el2,"lb")+svgLine(pose.el2,pose.hn2,"lb");
+
+  near += svgLine(pose.hp,pose.kn,"lm")+svgLine(pose.kn,pose.ft,"lm");
+  near += svgLine(pose.nk,pose.hp,"tq");
+  near += '<circle class="hd" cx="'+pose.hd[0]+'" cy="'+pose.hd[1]+'" r="9"/>';
+  near += svgLine(pose.nk,pose.hd,"lm");
+  near += svgLine(pose.nk,pose.el,"lm")+svgLine(pose.el,pose.hn,"lm");
+
+  var eq = (ex.equip==="bw" && !pose.wheel) ? "" : drawEquip(ex,pose);
+  if(ex.equip==="bw" && ex.pattern==="rollout") eq = drawEquip({equip:"oth"},pose);
+
+  return '<svg viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'
+    + '<g fill="none" stroke-linecap="round" stroke-linejoin="round">'
+    + drawProps(pose.p,pose,ex)
+    + far + near + eq
+    + '</g></svg>';
+}
+
+/* thumbnails for warm-up / cooldown rows use the same engine */
+function miniSVG(pattern){
+  return exSVG({pattern:pattern,equip:"bw",group:"x"});
+}
+</script>
+<script>/* ============================================================
+   ADVANCED MODE
+   Multi-muscle sessions, with the programming opinions a
+   coach would actually give you on the gym floor.
+   ============================================================ */
+
+var MUSCLES = ["chest","back","shoulders","biceps","triceps","legs","core"];
+
+var SHORT = {chest:"Chest",back:"Back",shoulders:"Shoulders",biceps:"Biceps",
+             triceps:"Triceps",legs:"Legs",core:"Core",cardio:"Cardio",fullbody:"Full body"};
+
+/* relative volume a muscle deserves in a shared session */
+var SIZE = {chest:1,back:1.05,legs:1.15,shoulders:.9,biceps:.55,triceps:.55,core:.6};
+
+/* the order a coach would train them in: biggest and most demanding first */
+var RANK = {legs:1,back:2,chest:3,shoulders:4,triceps:5,biceps:6,core:9};
+
+/* which muscles get worked as a by-product of training the key */
+var OVERLAP = {chest:["triceps","shoulders"],back:["biceps","shoulders"],
+               shoulders:["triceps"],legs:["core"],biceps:[],triceps:[],core:[]};
+
+var ANTAGONIST = [["chest","back"],["biceps","triceps"],["shoulders","back"]];
+
+var PRESETS = [
+  {name:"Push",       sel:["chest","shoulders","triceps"]},
+  {name:"Pull",       sel:["back","biceps"]},
+  {name:"Legs + Core",sel:["legs","core"]},
+  {name:"Upper",      sel:["chest","back","shoulders"]},
+  {name:"Arms",       sel:["biceps","triceps"]},
+  {name:"Chest + Back",sel:["chest","back"]}
+];
+
+/* hand-written notes for the pairings that come up most */
+var PAIR_NOTES = {
+ "chest+triceps":"Textbook push pairing. The triceps are already warm from every press, so they need finishing work at the end, not a session of their own. Press first, always.",
+ "back+biceps":"Textbook pull pairing. Get every row and pulldown done before the first curl — biceps fatigued early will cap what your back can pull.",
+ "back+chest":"Antagonist pairing, and the most time-efficient way to train upper body. Alternating a press with a row lets each recover while the other works.",
+ "biceps+triceps":"Arm day. Alternate them — one flexes while the other rests, so almost nothing is wasted.",
+ "shoulders+triceps":"Both take a beating from overhead pressing. Watch the total pressing volume, or the triceps will quit before the delts get their work.",
+ "chest+shoulders":"Heavy overlap at the front delt. Lead with whichever matters more this week and keep the second one to raises rather than more pressing.",
+ "core+legs":"Sensible pairing. Core goes last, always — a fatigued trunk makes heavy squats and hinges less safe, not more.",
+ "back+legs":"The most demanding combination there is. Both hammer the lower back and the grip. Do legs first, then pick chest-supported or machine rows so the erectors get a break.",
+ "legs+shoulders":"Unusual, but nothing competes, so both get full effort. The only cost is a long session — keep the rest periods honest.",
+ "biceps+chest":"Nothing competes here, which is the whole point. Less traditional than push/pull, and perfectly effective.",
+ "back+triceps":"Non-competing by design. Your back work will not be limited by tired triceps, and vice versa.",
+ "chest+core":"Straightforward. Press first, core last.",
+ "back+core":"Fine, as long as core comes last — you want a fresh trunk under the deadlifts and rows, not a fried one.",
+ "shoulders+biceps":"Low overlap, easy session to recover from. A good pairing when you are already sore from pressing.",
+ "core+shoulders":"Works well. Overhead work needs a braced trunk, so leave the core work until the pressing is done.",
+ "core+triceps":"Light session. If this is all you have planned, consider adding a bigger muscle to make the 90 minutes worthwhile.",
+ "biceps+legs":"Nothing competes, though it is an odd split. Legs first — you will not have much left afterwards anyway.",
+ "legs+triceps":"Nothing competes. Legs first, arms as the finisher."
+};
+
+function pairKey(a,b){return [a,b].sort().join("+")}
+
+/* the coach's read on whatever the user has selected */
+function advise(sel,finisher){
+  var out = {level:"good", head:"", points:[], order:[]};
+  if(!sel.length){ out.level="none"; return out }
+
+  var ordered = orderGroups(sel);
+  out.order = ordered;
+
+  if(sel.length===1){
+    out.head = "Single muscle, full attention.";
+    out.points.push("One muscle over 90 minutes means five or six exercises and plenty of sets — the most direct way to drive growth in a lagging area.");
+  }
+
+  /* every pair in the selection gets a verdict */
+  for(var i=0;i<sel.length;i++) for(var j=i+1;j<sel.length;j++){
+    var k = pairKey(sel[i],sel[j]);
+    if(PAIR_NOTES[k]) out.points.push(PAIR_NOTES[k]);
+    else {
+      var a=sel[i], b=sel[j];
+      var over = (OVERLAP[a]||[]).indexOf(b)>=0 || (OVERLAP[b]||[]).indexOf(a)>=0;
+      out.points.push(over
+        ? SHORT[a]+" and "+SHORT[b]+" share work, so the order matters. Train the one you care about more first."
+        : SHORT[a]+" and "+SHORT[b]+" do not compete, so both can get real effort in one session.");
+    }
+  }
+
+  /* back and legs together depends entirely on which you put first */
+  if(sel.indexOf("back")>=0 && sel.indexOf("legs")>=0){
+    out.points = out.points.filter(function(p){ return p!==PAIR_NOTES["back+legs"] });
+    var legsFirst = ordered.indexOf("legs") < ordered.indexOf("back");
+    out.points.push(legsFirst
+      ? "Back and legs both hammer the lower back and the grip. Legs first is the right call \u2014 just make the rowing chest-supported or machine-based afterwards so the erectors get a break."
+      : "Back and legs both hammer the lower back and the grip, and you have put back first. That works if the pulling is the priority, but go easier on the squat and hinge loading afterwards, or reorder if legs are what you actually came for.");
+  }
+
+  /* the pressing-overload check */
+  var press = ["chest","shoulders","triceps"].filter(function(g){return sel.indexOf(g)>=0}).length;
+  if(press===3){
+    out.level="caution";
+    out.points.push("All three pressing muscles in one session is a lot of overhead and horizontal work. Expect the last two exercises to feel much heavier than the numbers suggest, and drop a set if form goes.");
+  }
+  if(sel.indexOf("back")>=0 && sel.indexOf("legs")>=0 && out.level==="good") out.level="caution";
+
+  /* too many muscles for the time available */
+  if(sel.length>=4){
+    out.level="rethink";
+    out.points.unshift("Four or more muscles in 90 minutes leaves roughly two exercises each, which is below what most muscles need to actually grow. If you want to hit everything, run Full Body with big compounds instead — you will get more from it.");
+  }
+
+  if(sel.indexOf("core")>=0 && sel.length>1)
+    out.points.push("Core is programmed last. Nothing else in the session gets safer with a pre-fatigued trunk.");
+  if(finisher)
+    out.points.push("Conditioning goes after the weights, never before. Ten minutes is enough to matter without eating into tomorrow's recovery.");
+
+  out.head = out.level==="good" ? "This works well."
+           : out.level==="caution" ? "Workable, with a caveat."
+           : "I would rethink this one.";
+  return out;
+}
+
+/* train the priority muscle first, then biggest to smallest, core last */
+function orderGroups(sel){
+  var rest = sel.slice(1).sort(function(a,b){return (RANK[a]||5)-(RANK[b]||5)});
+  var first = sel[0];
+  if(first==="core" && sel.length>1){ rest.push("core"); return rest }
+  return [first].concat(rest);
+}
+
+/* split the exercise budget across muscles by size and priority */
+function allocate(ordered){
+  var n = ordered.length;
+  var total = n===1 ? 6 : n===2 ? (SIZE[ordered[0]]>=1 && SIZE[ordered[1]]>=1 ? 7 : 6) : 7;
+  var w = ordered.map(function(g,i){ return (SIZE[g]||.7) * (i===0?1.35:1) });
+  var sum = w.reduce(function(a,b){return a+b},0);
+  var raw = w.map(function(x){ return total*x/sum });
+  var out = raw.map(function(x){ return Math.max(1,Math.floor(x)) });
+  var used = out.reduce(function(a,b){return a+b},0);
+  while(used<total){                       // largest remainder to the biggest share
+    var bi=0,bv=-1;
+    raw.forEach(function(x,i){ var r=x-out[i]; if(r>bv && out[i]<5){bv=r;bi=i} });
+    out[bi]++; used++;
+  }
+  while(used>total){ var mi=out.indexOf(Math.max.apply(null,out)); out[mi]--; used--; }
+  var map={}; ordered.forEach(function(g,i){ map[g]=out[i] });
+  return map;
+}
+
+var LEVEL_BIAS = {
+  any:  {Beginner:0,  Intermediate:0,  Advanced:0},
+  inter:{Beginner:-3, Intermediate:1.5,Advanced:1.5},
+  adv:  {Beginner:-7, Intermediate:-1, Advanced:4.5}
+};
+
+/* pick exercises for a list of {g, role} slots, keeping variety global */
+function selectSlots(slots, avoid, level){
+  var bias = LEVEL_BIAS[level]||LEVEL_BIAS.any;
+  var chosen=[], usedEquip={}, usedPattern={}, taken={};
+  var rank = {C:0,c:1,a:2,i:3,t:4,x:5};
+  var order = slots.map(function(s,i){return {s:s,i:i}})
+                   .sort(function(a,b){return (rank[a.s.role]-rank[b.s.role])||(a.i-b.i)});
+
+  order.forEach(function(o){
+    var g=o.s.g, role=o.s.role, pool=LIB[g];
+    var fresh = pool.filter(function(e){return avoid.indexOf(e.id)<0 && !taken[e.id]});
+    if(fresh.length<4) fresh = pool.filter(function(e){return !taken[e.id]});
+    var tiers = FALLBACK[role]||[role], cands=[];
+    for(var t=0;t<tiers.length && !cands.length;t++)
+      cands = fresh.filter(function(e){return e.role===tiers[t]});
+    if(!cands.length) cands = fresh;
+    if(!cands.length) return;
+
+    var pats={}; pool.forEach(function(e){pats[e.pattern]=1});
+    var patPen = Object.keys(pats).length<=5 ? 1.6 : 4.5;
+    var best=null,bs=-1e9;
+    shuffle(cands).forEach(function(e){
+      var s=Math.random()*3 + (bias[e.diff]||0);
+      if(!usedEquip[e.equip]) s+=3.5; else s-=usedEquip[e.equip]*1.6;
+      if(usedPattern[e.pattern]) s-=patPen*usedPattern[e.pattern];
+      if(e.role===role) s+=1.5;
+      if(s>bs){bs=s;best=e}
+    });
+    taken[best.id]=1;
+    usedEquip[best.equip]=(usedEquip[best.equip]||0)+1;
+    usedPattern[best.pattern]=(usedPattern[best.pattern]||0)+1;
+    o.pick=best;
+  });
+
+  return order.sort(function(a,b){return a.i-b.i}).map(function(o){return o.pick}).filter(Boolean);
+}
+
+/* ---------- build a multi-muscle session ---------- */
+function buildMulti(sel, level, finisher, avoidExtra){
+  var ordered = orderGroups(sel);
+  var counts  = allocate(ordered);
+
+  var avoid = (avoidExtra||[]).slice();
+  ordered.forEach(function(g){
+    (S.history[g]||[]).slice(0,2).forEach(function(h){ avoid = avoid.concat(h.ids) });
+  });
+
+  var slots=[];
+  ordered.forEach(function(g){
+    TEMPLATES[g].slice(0,counts[g]).forEach(function(r){ slots.push({g:g,role:r}) });
+  });
+
+  var picks = selectSlots(slots, avoid, level);
+
+  /* display order: finish one muscle before starting the next, compounds first */
+  var rank={C:0,c:1,a:2,i:3,t:4};
+  picks.sort(function(a,b){
+    var ga=ordered.indexOf(a.group), gb=ordered.indexOf(b.group);
+    return ga-gb || rank[a.role]-rank[b.role];
+  });
+
+  var main = picks.map(prescribe);
+
+  if(finisher){
+    var cpool = LIB.cardio.filter(function(e){return e.role==="x"});
+    var fin = prescribe(pickOne(cpool));
+    fin.dur = 60*(8+rnd(3)); fin.lockSets = true; fin.finisher = true;
+    relabel(fin); main.push(fin);
+  }
+
+  var warm=[], cool=[];
+  ordered.forEach(function(g){
+    warm = warm.concat(WARMUP[g]||[]);
+    cool = cool.concat(COOLDOWN[g]||[]);
+  });
+  var open = pickOne(WARMUP.general.slice(0,4));
+  var wb = buildBlock(warm.concat(WARMUP.general.slice(4)), 540-open[2], 640-open[2]);
+  var ses = {
+    group: ordered[0], groups: ordered, mode:"multi", level:level, finisher:!!finisher,
+    warm: [{name:open[0],pattern:open[1],dur:open[2],note:open[3]}].concat(wb),
+    main: main,
+    cool: buildBlock(cool.concat(COOLDOWN.general), 520, 620),
+    created: Date.now(), saved:false
+  };
+
+  var pool = STYLES.filter(function(s){return s.groups==="*" || s.groups==="strength"});
+  if(hasAntagonist(ordered)) pool = pool.concat([{id:"antagonist",name:"Antagonist supersets",
+    desc:"Two opposing muscles are paired back to back. One works while the other recovers, which buys you time without cutting volume."}]);
+  var style = pickOne(pool);
+  ses.style=style.id; ses.styleName=style.name; ses.styleDesc=style.desc;
+
+  applyStyle(ses);
+  var target = Math.max(60*60, Math.min(73*60, 5400 - warmTime(ses.warm) - warmTime(ses.cool)));
+  tune(ses.main, target);
+  finalTags(ses);
+  return ses;
+}
+
+function hasAntagonist(sel){
+  return ANTAGONIST.some(function(p){return sel.indexOf(p[0])>=0 && sel.indexOf(p[1])>=0});
+}
+</script>
+<script>
+document.getElementById("today").textContent =
+  new Date().toLocaleDateString(undefined,{weekday:"long", day:"numeric", month:"short"});
+</script>
+<script>/* ============================================================
+   SESSION ENGINE
+   ============================================================ */
+var TARGET_MAIN = 69 * 60;      // seconds of main work we aim for
+var SETUP = 45;                 // walk to the station, load, unload
+var KEY = "gym:session:v1";
+
+var SPEC = {
+  C:{sets:4,reps:[6,8],  rest:150,tempo:4.0},
+  c:{sets:4,reps:[8,10], rest:120,tempo:3.5},
+  a:{sets:3,reps:[10,12],rest:90, tempo:3.2},
+  i:{sets:3,reps:[12,15],rest:60, tempo:3.0},
+  t:{sets:3,time:[30,50],rest:45},
+  x:{sets:1,time:[480,780],rest:90}
+};
+var FALLBACK = {C:["C","c","a"],c:["c","C","a"],a:["a","c","i"],i:["i","a","t"],t:["t","i","a"],x:["x"]};
+var CAP = {C:{sets:5,rest:180},c:{sets:5,rest:180},a:{sets:6,rest:135},i:{sets:6,rest:120},t:{sets:6,rest:90},x:{sets:1,rest:150}};
+function capOf(it){var ex=byId(it.g,it.id);return CAP[ex.role]||CAP.a}
+
+var TEMPLATES = {
+  chest:["C","c","a","a","i","i"], back:["C","c","a","a","i","i"],
+  shoulders:["C","c","a","i","i","i"], legs:["C","c","a","a","i","i"],
+  fullbody:["C","c","c","a","a","i"], biceps:["c","a","a","i","i","i"],
+  triceps:["c","a","a","i","i","i"], core:["i","i","t","i","t","i"],
+  cardio:["x","x","x","x","x"]
+};
+
+var STYLES = [
+ {id:"straight",name:"Straight sets",desc:"One exercise at a time, full rest between sets. Chase load on the first two lifts.",groups:"*"},
+ {id:"pyramid", name:"Pyramid opener",desc:"The opening lift climbs in weight as the reps come down. Everything after it is straight sets.",groups:"strength"},
+ {id:"superset",name:"Paired supersets",desc:"The last two exercises run back to back. Rest only after finishing both.",groups:"strength"},
+ {id:"drop",    name:"Drop-set finisher",desc:"On the final exercise, strip about a third of the load on the last set and keep going.",groups:"strength"},
+ {id:"restpause",name:"Rest-pause main lift",desc:"After the last set of the opener, rack it, take 15 breaths, then squeeze out a few more reps.",groups:"strength"},
+ {id:"circuit", name:"Circuit finisher",desc:"The last three movements run as a circuit. Three rounds, short rest, then done.",groups:"strength"},
+ {id:"emom",    name:"Every minute on the minute",desc:"Start each block at the top of a minute. Whatever time is left is your rest.",groups:"cardio"},
+ {id:"ladder",  name:"Interval ladder",desc:"Work intervals get longer as the session goes on. Hold the same effort throughout.",groups:"cardio"},
+ {id:"pyramidc",name:"Pyramid intervals",desc:"Build up to the hardest block in the middle, then wind back down.",groups:"cardio"}
+];
+
+/* ---------- helpers ---------- */
+function rnd(n){return Math.floor(Math.random()*n)}
+function pickOne(a){return a[rnd(a.length)]}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=rnd(i+1),t=a[i];a[i]=a[j];a[j]=t}return a}
+function mmss(s){var m=Math.floor(s/60),x=Math.round(s%60);return m+":"+(x<10?"0":"")+x}
+function mins(s){return Math.round(s/60)}
+function byId(g,id){return LIB[g].filter(function(e){return e.id===id})[0]}
+
+/* ---------- time model ---------- */
+function itemTime(it){
+  var ex = byId(it.g,it.id);
+  if(it.dur) return it.dur + it.rest;
+  if(it.time) return it.sets*it.time + it.sets*it.rest + SETUP;
+  var reps = it.repAvg || 10;
+  var tempo = SPEC[ex.role] ? (SPEC[ex.role].tempo||3.2) : 3.2;
+  return Math.round(it.sets*reps*tempo) + it.sets*it.rest + SETUP;
+}
+function blockTime(list){return list.reduce(function(s,i){return s+itemTime(i)},0)}
+function warmTime(list){return list.reduce(function(s,i){return s+i.dur},0)}
+function totalTime(ses){
+  if(!ses) return 0;
+  return warmTime(ses.warm)+blockTime(ses.main)+warmTime(ses.cool);
+}
+
+/* ---------- prescription ---------- */
+function prescribe(ex){
+  var sp = SPEC[ex.role]||SPEC.a;
+  var it = {id:ex.id,g:ex.group,sets:sp.sets,rest:sp.rest,done:false,tag:""};
+  if(ex.role==="x"){
+    it.dur = 60*(8+rnd(6));
+    it.rest = pickOne([60,90,120]);
+    it.label = Math.round(it.dur/60)+" min";
+  } else if(ex.role==="t"){
+    it.time = sp.time[0]+rnd(sp.time[1]-sp.time[0]+1);
+    it.time = Math.round(it.time/5)*5;
+    it.label = it.sets+" × "+it.time+" sec";
+  } else {
+    var lo = sp.reps[0], hi = sp.reps[1];
+    it.repLo=lo; it.repHi=hi; it.repAvg=(lo+hi)/2;
+    it.label = it.sets+" × "+lo+"–"+hi;
+  }
+  return it;
+}
+function relabel(it){
+  if(it.scheme){ it.label = it.scheme; return it; }
+  if(it.dur)  it.label = Math.round(it.dur/60)+" min";
+  else if(it.time) it.label = it.sets+" × "+it.time+" sec";
+  else it.label = it.sets+" × "+it.repLo+"–"+it.repHi;
+  return it;
+}
+
+/* ---------- selection ---------- */
+function selectExercises(group,avoid,count,level){
+  var lb = (typeof LEVEL_BIAS!=="undefined" ? LEVEL_BIAS[level||"any"] : null) || {};
+  var pool = LIB[group];
+  var tpl  = TEMPLATES[group].slice(0,count);
+  var fresh = pool.filter(function(e){return avoid.indexOf(e.id)<0});
+  if(fresh.length < count+4) fresh = pool.slice();     // pool exhausted, relax
+
+  var pats={}; pool.forEach(function(e){pats[e.pattern]=1});
+  var patPenalty = Object.keys(pats).length<=5 ? 1.6 : 4.5;
+  var chosen=[], usedEquip={}, usedPattern={};
+  tpl.forEach(function(role){
+    var tiers = FALLBACK[role]||[role], cands=[];
+    for(var t=0;t<tiers.length && !cands.length;t++){
+      cands = fresh.filter(function(e){
+        return e.role===tiers[t] && chosen.indexOf(e)<0;
+      });
+    }
+    if(!cands.length) cands = fresh.filter(function(e){return chosen.indexOf(e)<0});
+    if(!cands.length) return;
+    var best=null,bestScore=-1e9;
+    shuffle(cands).forEach(function(e){
+      var s = Math.random()*3 + (lb[e.diff]||0);
+      if(!usedEquip[e.equip]) s += 3.5;
+      else s -= usedEquip[e.equip]*1.6;
+      if(usedPattern[e.pattern]) s -= patPenalty*usedPattern[e.pattern];
+      if(e.role===role) s += 1.5;
+      if(s>bestScore){bestScore=s;best=e}
+    });
+    chosen.push(best);
+    usedEquip[best.equip]=(usedEquip[best.equip]||0)+1;
+    usedPattern[best.pattern]=(usedPattern[best.pattern]||0)+1;
+  });
+  return chosen;
+}
+
+/* ---------- tuner: land the session near 90 minutes ---------- */
+function tune(main,target){
+  target = target || TARGET_MAIN;
+  for(var pass=0;pass<300;pass++){
+    var t = blockTime(main), diff = target - t;
+    if(Math.abs(diff)<=120) break;
+    var moved=false;
+    var order = shuffle(main.slice());
+    for(var k=0;k<order.length && !moved;k++){
+      var it=order[k], cap=capOf(it);
+      if(diff>0){
+        if(it.dur && it.dur<1080){ it.dur+=60; moved=true }
+        else if(!it.lockSets && it.sets<cap.sets){ it.sets++; moved=true }
+        else if(it.time && it.time<60){ it.time=Math.min(60,it.time+5); moved=true }
+        else if(!it.lockRest && it.rest<cap.rest){ it.rest=Math.min(cap.rest,it.rest+15); moved=true }
+      } else {
+        if(it.dur && it.dur>360){ it.dur-=60; moved=true }
+        else if(!it.lockSets && it.sets>2){ it.sets--; moved=true }
+        else if(!it.lockRest && it.rest>45){ it.rest=Math.max(45,it.rest-15); moved=true }
+        else if(it.time && it.time>25){ it.time-=5; moved=true }
+      }
+      if(moved) relabel(it);
+    }
+    if(!moved) break;
+  }
+  return main;
+}
+
+/* ---------- style application ---------- */
+function applyStyle(ses){
+  var all = ses.main, st = ses.style;
+  var m = all.filter(function(i){return !i.finisher});
+  all.forEach(function(i){ if(i.finisher){ i.tag="Conditioning finisher"; relabel(i) } });
+  m.forEach(function(i){i.tag="";i.scheme=null;i.circuit=false;i.lockRest=false;i.lockSets=false;relabel(i)});
+  if(st==="pyramid" && m[0] && !m[0].dur && !m[0].time){
+    m[0].sets=4; m[0].scheme="12 / 10 / 8 / 6"; m[0].repAvg=9; m[0].tag="Pyramid";
+  }
+  if(st==="superset" && m.length>=2){
+    var a=m[m.length-2], b=m[m.length-1];
+    a.tag="Superset A"; b.tag="Superset B";
+    a.rest=20; a.lockRest=true; b.rest=Math.max(90,b.rest);
+  }
+  if(st==="drop"){ var l=m[m.length-1]; if(l){l.tag="Drop set on the last set"} }
+  if(st==="restpause" && m[0]){ m[0].tag="Rest-pause on the final set" }
+  if(st==="circuit" && m.length>=3){
+    m.slice(-3).forEach(function(i){
+      i.circuit=true; i.rest=45; i.lockRest=true; relabel(i);
+    });
+  }
+  if(st==="antagonist"){
+    var pairA=null,pairB=null;
+    for(var x=m.length-1;x>=0 && !pairA;x--){
+      for(var y=x-1;y>=0;y--){
+        if(m[x].g!==m[y].g && "ai".indexOf(byId(m[x].g,m[x].id).role)>=0 && "ai".indexOf(byId(m[y].g,m[y].id).role)>=0){
+          pairA=m[y]; pairB=m[x]; break;
+        }
+      }
+    }
+    if(!pairA && m.length>=2){ pairA=m[m.length-2]; pairB=m[m.length-1] }
+    if(pairA){
+      pairA.tag="Superset A — go straight into B";
+      pairB.tag="Superset B — rest after this";
+      pairA.rest=20; pairA.lockRest=true; pairB.rest=Math.max(90,pairB.rest);
+    }
+  }
+  if(st==="emom"){ m.forEach(function(i){i.tag="EMOM"}) }
+  if(st==="ladder"){ m.forEach(function(i,ix){ i.dur=60*(8+ix); i.tag="Block "+(ix+1); relabel(i) }) }
+  if(st==="pyramidc"){
+    var mid=Math.floor(m.length/2);
+    m.forEach(function(i,ix){ i.dur=60*(9+ (mid-Math.abs(ix-mid))*2); i.tag="Block "+(ix+1); relabel(i) });
+  }
+  m.forEach(relabel);
+  return ses;
+}
+
+function finalTags(ses){
+  ses.main.forEach(function(i){
+    if(i.finisher) i.tag = "Conditioning finisher";
+    if(i.circuit) i.tag = "Circuit, " + i.sets + " rounds";
+    relabel(i);
+  });
+}
+
+/* ---------- warm-up and cooldown ---------- */
+function buildBlock(pool, lo, hi){
+  var picks=[], total=0, bag=shuffle(pool);
+  for(var i=0;i<bag.length && total<lo;i++){
+    picks.push(bag[i]); total+=bag[i][2];
+    if(total>hi && picks.length>2){ total-=picks.pop()[2]; break }
+  }
+  return picks.map(function(p){return {name:p[0],pattern:p[1],dur:p[2],note:p[3]}});
+}
+function buildWarmup(g){
+  var cardioish = WARMUP.general.slice(0,4);
+  var rest = WARMUP.general.slice(4).concat(WARMUP[g]||[]);
+  var open = pickOne(cardioish);
+  var block = buildBlock(rest, 540-open[2], 640-open[2]);
+  return [{name:open[0],pattern:open[1],dur:open[2],note:open[3]}].concat(block);
+}
+function buildCooldown(g){
+  return buildBlock((COOLDOWN[g]||[]).concat(COOLDOWN.general), 520, 620);
+}
+
+/* ---------- build a whole session ---------- */
+function buildSession(group, avoidIds){
+  var hist = (S.history[group]||[]).slice(0,3);
+  var avoid = [];
+  hist.forEach(function(h){avoid = avoid.concat(h.ids)});
+  avoid = avoid.concat(avoidIds||[]);
+
+  var pool = STYLES.filter(function(s){
+    return s.groups==="*" || (group==="cardio" ? s.groups==="cardio" : s.groups==="strength");
+  });
+  var style = pickOne(pool);
+
+  var count = group==="cardio" ? 5
+            : style.id==="circuit" ? 6
+            : (Math.random()<0.45 ? 5 : 6);
+
+  var warm = buildWarmup(group), cool = buildCooldown(group);
+  var picks = selectExercises(group, avoid, count, S.level);
+
+  var ses = {
+    group:group, style:style.id, styleName:style.name, styleDesc:style.desc,
+    warm:warm, main:picks.map(prescribe), cool:cool,
+    created:Date.now(), saved:false
+  };
+  applyStyle(ses);
+  var target = Math.max(62*60, Math.min(73*60, 5400 - warmTime(warm) - warmTime(cool)));
+  tune(ses.main, target);
+  finalTags(ses);
+  return ses;
+}
+
+/* ---------- swap one exercise ---------- */
+function swapOne(idx){
+  var ses = S.session, cur = ses.main[idx];
+  var ex = byId(cur.g,cur.id);
+  var g  = cur.g;                       // swap within this exercise's own muscle
+  var before = totalTime(ses);
+  var inSession = ses.main.map(function(i){return i.id});
+  var avoid = inSession.slice();
+  (S.history[g]||[]).slice(0,3).forEach(function(h){avoid=avoid.concat(h.ids)});
+
+  var bias = (typeof LEVEL_BIAS!=="undefined" ? LEVEL_BIAS[S.level||"any"] : null) || {};
+  var tiers = FALLBACK[ex.role]||[ex.role], cands=[];
+  for(var t=0;t<tiers.length && !cands.length;t++){
+    cands = LIB[g].filter(function(e){
+      return e.role===tiers[t] && avoid.indexOf(e.id)<0;
+    });
+  }
+  if(!cands.length) cands = LIB[g].filter(function(e){return inSession.indexOf(e.id)<0});
+  if(!cands.length) return null;
+
+  var others = ses.main.filter(function(i,k){return k!==idx}).map(function(i){return byId(i.g,i.id)});
+  var best=null,bs=-1e9;
+  shuffle(cands).forEach(function(e){
+    var s=Math.random()*3 + (bias[e.diff]||0);
+    if(others.some(function(o){return o.pattern===e.pattern})) s-=4;
+    if(!others.some(function(o){return o.equip===e.equip})) s+=3;
+    if(e.equip===ex.equip) s-=1.5;
+    if(s>bs){bs=s;best=e}
+  });
+  var fresh = prescribe(best);
+  fresh.sets = cur.sets; fresh.rest = cur.rest;
+  if(cur.dur && fresh.dur) fresh.dur = cur.dur;
+  fresh.finisher = cur.finisher; fresh.lockSets = cur.lockSets;
+  relabel(fresh);
+  ses.main[idx]=fresh;
+  applyStyle(ses);
+  finalTags(ses);
+  var after = totalTime(ses);
+  return {name:best.name, delta:after-before, total:after};
+}
+
+/* ============================================================
+   STATE + STORAGE
+   ============================================================ */
+var S = {theme:"dark", group:"", session:null, history:{}, logs:{},
+         view:"session", mode:"single", sel:[], level:"any", finisher:false,
+         bf:{g:"chest",eq:"all",lv:"all"}, open:""};
+var saveTimer=null, lastSaved=0;
+
+/* Storage picks the best free option available, in order:
+   1. Claude's artifact storage, when the app runs inside claude.ai
+   2. the browser's own localStorage, when you open the file yourself
+   3. memory, which survives nothing — but at least never errors        */
+var MEM={};
+var STORE = (function(){
+  try{
+    if(window.storage && window.storage.get && window.storage.set){
+      return {
+        name:"Claude artifact storage", warn:"Tied to this chat. Export a backup before you rely on it.",
+        get:function(k){ return window.storage.get(k).then(function(r){return r&&r.value}).catch(function(){return null}) },
+        set:function(k,v){ return window.storage.set(k,v) }
+      };
+    }
+  }catch(e){}
+  try{
+    var t="__probe__";
+    window.localStorage.setItem(t,"1"); window.localStorage.removeItem(t);
+    return {
+      name:"this browser", warn:"",
+      get:function(k){ return Promise.resolve(window.localStorage.getItem(k)) },
+      set:function(k,v){ window.localStorage.setItem(k,v); return Promise.resolve() }
+    };
+  }catch(e){}
+  return {
+    name:"this tab only", warn:"Nothing will survive a refresh here. Export a backup or open the file from a browser.",
+    get:function(k){ return Promise.resolve(MEM[k]||null) },
+    set:function(k,v){ MEM[k]=v; return Promise.resolve() }
+  };
+})();
+
+function snapshot(){
+  return {
+    v:1, exported:Date.now(),
+    theme:S.theme, group:S.group, session:S.session, history:S.history, logs:S.logs,
+    mode:S.mode, sel:S.sel, level:S.level, finisher:S.finisher, bf:S.bf
+  };
+}
+function adopt(d){
+  if(!d) return;
+  S.theme=d.theme||S.theme; S.group=d.group||S.group;
+  S.session=d.session||S.session; S.history=d.history||{}; S.logs=d.logs||{};
+  S.mode=d.mode||S.mode; S.sel=d.sel||S.sel; S.level=d.level||S.level;
+  S.finisher=!!d.finisher; S.bf=d.bf||S.bf;
+}
+
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(function(){
+    try{
+      var p = STORE.set(KEY, JSON.stringify(snapshot()));
+      lastSaved = Date.now();
+      if(p && p.catch) p.catch(function(){});
+    }catch(e){}
+  },350);
+}
+async function load(){
+  try{
+    var raw = await STORE.get(KEY);
+    if(raw) adopt(JSON.parse(raw));
+  }catch(e){}
+  try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function(){}) }catch(e){}
+}
+
+/* ---------- backup file in, backup file out ---------- */
+function exportData(){
+  var name = "gym-backup-"+new Date().toISOString().slice(0,10)+".json";
+  var text = JSON.stringify(snapshot(),null,2);
+  try{
+    var blob = new Blob([text],{type:"application/json"});
+    var url  = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href=url; a.download=name; document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove() },400);
+    return true;
+  }catch(e){
+    try{
+      var wn = window.open("","_blank");
+      wn.document.write("<pre>"+text.replace(/</g,"&lt;")+"</pre>");
+      return true;
+    }catch(e2){ return false }
+  }
+}
+
+/* merge rather than overwrite, so two devices can both contribute */
+function mergeData(d){
+  if(!d || typeof d!=="object") throw new Error("not a backup file");
+  var added={logs:0,sessions:0};
+  Object.keys(d.logs||{}).forEach(function(id){
+    var mine=S.logs[id], theirs=d.logs[id];
+    if(!mine || (theirs.d||0) > (mine.d||0)){ S.logs[id]=theirs; added.logs++ }
+  });
+  Object.keys(d.history||{}).forEach(function(g){
+    var all = (S.history[g]||[]).concat(d.history[g]||[]);
+    var seen={}, out=[];
+    all.sort(function(a,b){return (b.d||0)-(a.d||0)}).forEach(function(h){
+      if(seen[h.d]) return; seen[h.d]=1; out.push(h);
+    });
+    added.sessions += out.length - (S.history[g]||[]).length;
+    S.history[g] = out.slice(0,3);
+  });
+  if(!S.session && d.session) S.session = d.session;
+  if(d.logs && Object.keys(d.logs).length && d.theme) S.theme = S.theme;
+  save();
+  return added;
+}
+
+function wipeData(){
+  S.session=null; S.history={}; S.logs={}; S.sel=[]; S.group="";
+  save();
+}
+
+function commitHistory(){
+  var ses=S.session; if(!ses||ses.saved) return;
+  var groups = ses.groups || [ses.group];
+  groups.forEach(function(g){
+    var ids = ses.main.filter(function(i){return i.g===g}).map(function(i){return i.id});
+    if(!ids.length) return;
+    S.history[g] = ([{d:Date.now(),ids:ids}]).concat(S.history[g]||[]).slice(0,3);
+  });
+  ses.saved=true; save();
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+var $ = function(s){return document.querySelector(s)};
+var notice=null;
+
+function chip(t,cls){return '<span class="chip '+(cls||"")+'">'+t+'</span>'}
+function ytURL(name,extra){
+  return "https://www.youtube.com/results?search_query="
+    + encodeURIComponent(name + (extra?" "+extra:"") + " #shorts");
+}
+var PLAY = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="M10.5 9.2l5 2.8-5 2.8z" fill="currentColor"/></svg>';
+
+/* ---------- navigation + picker ---------- */
+function renderNav(){
+  $("#nav").innerHTML =
+     '<button class="tab'+(S.view==="session"?" on":"")+'" data-act="tab" data-v="session">Today\u2019s session</button>'
+   + '<button class="tab'+(S.view==="browse"?" on":"")+'" data-act="tab" data-v="browse">Exercise library</button>';
+}
+
+function levelRow(){
+  var opts=[["any","All levels"],["inter","Intermediate +"],["adv","Advanced only"]];
+  return '<div class="pillrow">'+opts.map(function(o){
+    return '<button class="pill'+(S.level===o[0]?" on":"")+'" data-act="level" data-l="'+o[0]+'">'+o[1]+'</button>';
+  }).join("")+'</div>';
+}
+
+function renderPicker(){
+  if(S.view!=="session"){ $("#pick").innerHTML=""; return }
+  var h = '<div class="picker">'
+    + '<div class="seg">'
+    +   '<button class="'+(S.mode==="single"?"on":"")+'" data-act="mode" data-m="single">One muscle</button>'
+    +   '<button class="'+(S.mode==="multi"?"on":"")+'" data-act="mode" data-m="multi">Advanced</button>'
+    + '</div>';
+
+  if(S.mode==="single"){
+    h += '<label for="group">What are you training today?</label>'
+      +  '<div class="selrow"><div class="sel"><select id="group">'
+      +    '<option value="">Choose a body part\u2026</option>'
+      +    GROUPS.map(function(g){return '<option value="'+g[0]+'"'+(S.group===g[0]?" selected":"")+'>'+g[1]+'</option>'}).join("")
+      +  '</select></div><button class="build" data-act="build">Build</button></div>'
+      +  '<div class="pickhint">Training level</div>' + levelRow();
+  } else {
+    h += '<label>Tap the muscles you want to train. The first one you pick is the priority.</label>'
+      +  '<div class="pillrow wrap">'+PRESETS.map(function(p,i){
+           return '<button class="pill" data-act="preset" data-p="'+i+'">'+p.name+'</button>';
+         }).join("")+'</div>'
+      +  '<div class="mgrid">'+MUSCLES.map(function(g){
+           var ix=S.sel.indexOf(g);
+           return '<button class="mchip'+(ix>=0?" on":"")+'" data-act="msel" data-g="'+g+'">'
+             + (ix>=0?'<i>'+(ix+1)+'</i>':'') + SHORT[g] + '</button>';
+         }).join("")+'</div>'
+      +  '<button class="toggle'+(S.finisher?" on":"")+'" data-act="fin">'
+      +    '<span class="box">'+(S.finisher?"\u2713":"")+'</span>Finish with 8\u201310 min of conditioning</button>'
+      +  '<div class="pickhint">Training level</div>' + levelRow();
+
+    var adv = advise(S.sel, S.finisher);
+    if(adv.level!=="none"){
+      h += '<div class="advice '+adv.level+'">'
+        +  '<b>'+adv.head+'</b>'
+        +  '<div class="seq">'+adv.order.map(function(g){return SHORT[g]}).join(" \u2192 ")
+        +    (S.finisher?" \u2192 Conditioning":"")+'</div>'
+        +  '<ul>'+adv.points.map(function(p){return '<li>'+p+'</li>'}).join("")+'</ul>'
+        +  '</div>';
+    }
+    h += '<button class="build wide'+(S.sel.length?"":" off")+'" data-act="buildmulti">'
+      +  (S.sel.length?"Build this session":"Pick at least one muscle")+'</button>';
+  }
+  $("#pick").innerHTML = h + '</div>';
+}
+
+/* ---------- exercise card ---------- */
+function exCard(it,idx){
+  var ex = byId(it.g,it.id);
+  var ses = S.session;
+  var multi = ses.groups && ses.groups.length>1;
+  var last = S.logs[ex.id];
+  var rows="";
+  var n = it.dur ? 1 : it.sets;
+  for(var i=0;i<n;i++){
+    var prev = last && last.s && last.s[i] ? last.s[i] : ["",""];
+    var cur  = (it.log && it.log[i]) || ["",""];
+    rows += '<tr><td>'+(i+1)+'</td>'
+      + '<td><input inputmode="decimal" data-log="'+idx+'" data-set="'+i+'" data-f="0" value="'+(cur[0]||"")+'" placeholder="'+(prev[0]?prev[0]:"kg")+'"></td>'
+      + '<td class="sep"></td>'
+      + '<td><input inputmode="numeric" data-log="'+idx+'" data-set="'+i+'" data-f="1" value="'+(cur[1]||"")+'" placeholder="'+(prev[1]?prev[1]:"reps")+'"></td></tr>';
+  }
+  var restLine = it.dur ? mins(it.rest)+" min recovery after" : mmss(it.rest)+" rest between sets";
+
+  return '<article class="card'+(it.done?" done":"")+'" data-i="'+idx+'">'
+   + '<div class="chead">'
+   +   '<div class="slot">'+(idx+1)+'</div>'
+   +   '<div class="ctitle">'
+   +     ((multi||it.finisher)?'<span class="mtag">'+SHORT[ex.group]+'</span>':'')
+   +     '<h3 class="cname">'+ex.name+'</h3>'
+   +     (it.tag?'<span class="tag style">'+it.tag+'</span>':'')
+   +   '</div>'
+   +   '<button class="swap" data-act="swap" data-i="'+idx+'" aria-label="Swap this exercise">'
+   +     '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></svg>'
+   +   '</button>'
+   + '</div>'
+   + '<div class="cbody">'
+   +   '<div class="viz">'+exSVG(ex)+'</div>'
+   +   '<div class="pres">'
+   +     '<div class="big">'+it.label+'</div>'
+   +     '<div class="sub">'+restLine+'</div>'
+   +     '<div class="chips">'+chip(ex.diff,"d "+ex.diff)+chip(EQUIP[ex.equip])+chip(ex.target)+'</div>'
+   +   '</div>'
+   + '</div>'
+   + '<div class="cues"><ul><li>'+ex.cues.join('</li><li>')+'</li></ul></div>'
+   + (it.dur ? '' : '<div class="log"><table class="logtable"><tr><th></th><th>Weight</th><th></th><th>Reps</th></tr>'+rows+'</table></div>')
+   + '<div class="cfoot">'
+   +   '<button class="act prime" data-act="done" data-i="'+idx+'">'+(it.done?"Done":"Mark done")+'</button>'
+   +   '<button class="act rest" data-act="rest" data-i="'+idx+'">Rest '+mmss(it.rest)+'</button>'
+   +   '<a class="act vid" href="'+ytURL(ex.name,"proper form")+'" target="_blank" rel="noopener noreferrer" aria-label="Watch a short form video for '+ex.name+'">'+PLAY+'Form</a>'
+   + '</div>'
+   + '</article>';
+}
+
+function simpleRows(list){
+  return '<div class="simple">'+list.map(function(r){
+    return '<a class="srow" href="'+ytURL(r.name)+'" target="_blank" rel="noopener noreferrer">'
+      +'<div class="sv">'+miniSVG(r.pattern)+'</div>'
+      +'<div class="nm">'+r.name+'<em>'+r.note+'</em></div>'
+      +'<div class="tm">'+(r.dur>=60?Math.round(r.dur/60)+" min":r.dur+" sec")+'</div>'
+      +'<span class="go">'+PLAY+'</span></a>';
+  }).join("")+'</div>';
+}
+
+/* ---------- session view ---------- */
+function renderSession(){
+  var ses=S.session, body="";
+  if(!ses){
+    body = '<div class="empty"><h3>Pick what you are training</h3>'
+      + '<p>You will get a warm-up, the main work and a stretch-down \u2014 about 90 minutes, built fresh every time. '
+      + 'Advanced mode lets you combine muscles and tells you whether the combination is a good idea.</p></div>';
+    if(Object.keys(S.history).length){
+      body += '<div class="hist"><b>Recent sessions</b>'+Object.keys(S.history).map(function(g){
+        var h=S.history[g][0]; if(!h) return "";
+        return '<div>'+SHORT[g]+' \u2014 '+new Date(h.d).toLocaleDateString()+', '+h.ids.length+' exercises</div>';
+      }).join("")+'</div>';
+    }
+    $("#body").innerHTML = body; return;
+  }
+
+  var tot = totalTime(ses);
+  var doneN = ses.main.filter(function(i){return i.done}).length;
+  var pct = Math.round(doneN/ses.main.length*100);
+  var off = Math.abs(tot-5400) > 6*60;
+  var title = (ses.groups||[ses.group]).map(function(g){return SHORT[g]}).join(" + ");
+
+  body += '<div class="meta">'
+    + '<div class="stat'+(off?" warn":"")+'"><div class="v">'+mins(tot)+' min</div><div class="k">'+title+'</div></div>'
+    + '<div class="stat"><div class="v">'+doneN+' / '+ses.main.length+'</div><div class="k">exercises done</div>'
+    +   '<div class="bar"><i style="width:'+pct+'%"></i></div></div>'
+    + '</div>';
+
+  if(notice) body += '<div class="notice"><span>'+notice+'</span><button data-act="closenote" aria-label="Dismiss">\u00d7</button></div>';
+
+  body += '<div class="stylecard"><b>'+ses.styleName+'</b><p>'+ses.styleDesc+'</p></div>';
+
+  if(ses.groups && ses.groups.length>1){
+    var adv = advise(ses.groups, ses.finisher);
+    body += '<div class="advice '+adv.level+' compact"><b>'+adv.head+'</b>'
+      + '<div class="seq">'+adv.order.map(function(g){return SHORT[g]}).join(" \u2192 ")+(ses.finisher?" \u2192 Conditioning":"")+'</div>'
+      + '<ul><li>'+adv.points.slice(0,2).join('</li><li>')+'</li></ul></div>';
+  }
+
+  body += '<div class="sechead"><span class="rule"></span><h2>Warm-up</h2><span class="dur">'+mins(warmTime(ses.warm))+' min</span></div>'
+    + simpleRows(ses.warm)
+    + '<div class="sechead"><span class="rule"></span><h2>Main workout</h2><span class="dur">'+mins(blockTime(ses.main))+' min</span></div>'
+    + ses.main.map(exCard).join("")
+    + '<div class="sechead"><span class="rule"></span><h2>Cooldown</h2><span class="dur">'+mins(warmTime(ses.cool))+' min</span></div>'
+    + simpleRows(ses.cool)
+    + '<button class="finish" data-act="finish">'+(ses.saved?"Session saved":"Finish and save session")+'</button>'
+    + '<button class="ghost" data-act="shuffle">Shuffle the whole session</button>';
+
+  $("#body").innerHTML = body;
+}
+
+/* ---------- library view ---------- */
+function renderBrowse(){
+  var f=S.bf;
+  var eqs=[["all","All kit"]].concat(Object.keys(EQUIP).map(function(k){return [k,EQUIP[k]]}));
+  var lvs=[["all","All"],["Beginner","Beginner"],["Intermediate","Intermediate"],["Advanced","Advanced"]];
+
+  var list = (f.g==="all" ? Object.keys(LIB).reduce(function(a,g){return a.concat(LIB[g])},[]) : (LIB[f.g]||[]))
+    .filter(function(e){ return (f.eq==="all"||e.equip===f.eq) && (f.lv==="all"||e.diff===f.lv) });
+
+  var h = '<div class="picker">'
+    + '<label>Browse every movement in the library, grouped by the muscle it trains.</label>'
+    + '<div class="mgrid">'+GROUPS.map(function(g){
+        return '<button class="mchip'+(f.g===g[0]?" on":"")+'" data-act="bf" data-k="g" data-v="'+g[0]+'">'+SHORT[g[0]]+'</button>';
+      }).join("")+'</div>'
+    + '<div class="pickhint">Equipment</div>'
+    + '<div class="pillrow wrap">'+eqs.map(function(o){
+        return '<button class="pill'+(f.eq===o[0]?" on":"")+'" data-act="bf" data-k="eq" data-v="'+o[0]+'">'+o[1]+'</button>';
+      }).join("")+'</div>'
+    + '<div class="pickhint">Difficulty</div>'
+    + '<div class="pillrow">'+lvs.map(function(o){
+        return '<button class="pill'+(f.lv===o[0]?" on":"")+'" data-act="bf" data-k="lv" data-v="'+o[0]+'">'+o[1]+'</button>';
+      }).join("")+'</div>'
+    + '</div>';
+
+  h += '<div class="sechead"><span class="rule"></span><h2>'+SHORT[f.g]+'</h2>'
+    +  '<span class="dur">'+list.length+' exercise'+(list.length===1?"":"s")+'</span></div>';
+
+  h += list.length ? '<div class="simple">'+list.map(function(e){
+        var open = S.open===e.id;
+        return '<div class="libitem'+(open?" open":"")+'">'
+          + '<button class="librow" data-act="expand" data-id="'+e.id+'">'
+          +   '<span class="nm">'+e.name+'<em>'+e.target+'</em></span>'
+          +   '<span class="chip d '+e.diff+'">'+e.diff.slice(0,3)+'</span>'
+          +   '<span class="caret">'+(open?"\u2212":"+")+'</span>'
+          + '</button>'
+          + (open ? '<div class="libbody">'
+              + '<div class="viz">'+exSVG(e)+'</div>'
+              + '<div class="libinfo">'
+              +   '<div class="chips">'+chip(EQUIP[e.equip])+chip(e.diff,"d "+e.diff)+chip(SHORT[e.group])+'</div>'
+              +   '<ul class="cuelist"><li>'+e.cues.join('</li><li>')+'</li></ul>'
+              +   '<a class="act vid" href="'+ytURL(e.name,"proper form")+'" target="_blank" rel="noopener noreferrer">'+PLAY+'Form video</a>'
+              + '</div></div>' : '')
+          + '</div>';
+      }).join("")+'</div>'
+    : '<div class="empty"><p>Nothing matches those filters. Try widening the equipment or difficulty.</p></div>';
+
+  $("#body").innerHTML = h;
+}
+
+function renderDock(){
+  var d=$("#dock"), ses=S.session;
+  if(S.view==="browse"){
+    d.innerHTML = '<div class="dockin"><div class="dockstat"><div class="v">Exercise library</div>'
+      + '<div class="k">Tap any movement for cues and a video</div></div>'
+      + '<button class="dbtn" data-act="tab" data-v="session">Back to session</button></div>';
+    return;
+  }
+  if(ses){
+    var t=totalTime(ses), w=Math.abs(t-5400)>6*60;
+    d.innerHTML = '<div class="dockin">'
+      + '<div class="dockstat'+(w?" warn":"")+'"><div class="v">'+mins(t)+' min</div><div class="k">'
+      +   ses.main.filter(function(i){return i.done}).length+' of '+ses.main.length+' done</div></div>'
+      + '<button class="dbtn" data-act="shuffle">Shuffle</button>'
+      + '<button class="dbtn timer" data-act="opentimer">Rest timer</button>'
+      + '</div>';
+  } else {
+    d.innerHTML = '<div class="dockin"><div class="dockstat"><div class="v">No session yet</div>'
+      + '<div class="k">Choose what you are training</div></div></div>';
+  }
+}
+
+function renderData(){
+  var sessions = Object.keys(S.history).reduce(function(a,g){return a+S.history[g].length},0);
+  var logs = Object.keys(S.logs).length;
+  var d=$("#dnum");
+  if(!d) return;
+  d.innerHTML =
+      '<div class="drow"><span>Saving to</span><b>'+STORE.name+'</b></div>'
+    + '<div class="drow"><span>Sessions kept</span><b>'+sessions+'</b></div>'
+    + '<div class="drow"><span>Exercises logged</span><b>'+logs+'</b></div>'
+    + (STORE.warn ? '<p class="dwarn">'+STORE.warn+'</p>' : '')
+    + (dmsg ? '<p class="dmsg">'+dmsg+'</p>' : '');
+}
+var dmsg="";
+
+function render(){
+  document.documentElement.setAttribute("data-theme",S.theme);
+  renderNav(); renderPicker();
+  if(S.view==="browse") renderBrowse(); else renderSession();
+  renderDock(); renderData();
+}
+
+/* ============================================================
+   REST TIMER
+   ============================================================ */
+var T = {sec:90, left:90, on:false, iv:null, C:603.19};
+function timerPaint(){
+  $("#tnum").textContent = mmss(T.left);
+  $("#tring").style.strokeDashoffset = String(T.C*(1-(T.left/T.sec||0)));
+  $("#tgo").textContent = T.on ? "Pause" : (T.left<T.sec ? "Resume" : "Start");
+  Array.prototype.forEach.call(document.querySelectorAll("[data-pre]"),function(b){
+    b.classList.toggle("on", Number(b.dataset.pre)===T.sec);
+  });
+}
+function timerSet(s){T.sec=s;T.left=s;timerStop();timerPaint()}
+function timerStop(){T.on=false;clearInterval(T.iv);T.iv=null}
+function timerStart(){
+  if(T.left<=0) T.left=T.sec;
+  T.on=true; clearInterval(T.iv);
+  T.iv=setInterval(function(){
+    T.left--; 
+    if(T.left<=0){ T.left=0; timerStop(); beep(); }
+    timerPaint();
+  },1000);
+  timerPaint();
+}
+function beep(){
+  try{
+    if(navigator.vibrate) navigator.vibrate([220,120,220]);
+    var ac=new (window.AudioContext||window.webkitAudioContext)();
+    [0,0.28].forEach(function(off){
+      var o=ac.createOscillator(),g=ac.createGain();
+      o.type="sine"; o.frequency.value=880;
+      g.gain.setValueAtTime(0.0001,ac.currentTime+off);
+      g.gain.exponentialRampToValueAtTime(0.35,ac.currentTime+off+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,ac.currentTime+off+0.22);
+      o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+off);o.stop(ac.currentTime+off+0.24);
+    });
+  }catch(e){}
+}
+function openTimer(sec){
+  if(sec) timerSet(sec);
+  $("#sheet").classList.add("on");
+  timerPaint();
+}
+
+/* ============================================================
+   WIRING
+   ============================================================ */
+function newSession(group,keepAvoid){
+  var avoid = keepAvoid && S.session && S.session.mode!=="multi" && S.session.group===group
+    ? S.session.main.map(function(i){return i.id}) : [];
+  S.session = buildSession(group,avoid);
+  S.group = group; S.mode="single"; notice=null;
+  save(); render(); toTop();
+}
+function newMulti(keepAvoid){
+  if(!S.sel.length) return;
+  var avoid = keepAvoid && S.session && S.session.mode==="multi"
+    ? S.session.main.map(function(i){return i.id}) : [];
+  S.session = buildMulti(S.sel, S.level, S.finisher, avoid);
+  notice=null; save(); render(); toTop();
+}
+function toTop(){ try{ window.scrollTo(0,0) }catch(e){} }
+
+document.addEventListener("click",function(e){
+  var b = e.target.closest("[data-act]"); if(!b) return;
+  var act=b.dataset.act, i=Number(b.dataset.i);
+  var ses=S.session;
+
+  if(act==="tab"){ S.view=b.dataset.v; S.open=""; save(); render(); toTop(); return }
+  if(act==="mode"){ S.mode=b.dataset.m; save(); render(); return }
+  if(act==="level"){ S.level=b.dataset.l; save(); render(); return }
+  if(act==="fin"){ S.finisher=!S.finisher; save(); render(); return }
+  if(act==="msel"){
+    var g=b.dataset.g, ix=S.sel.indexOf(g);
+    if(ix>=0) S.sel.splice(ix,1); else S.sel.push(g);
+    save(); render(); return;
+  }
+  if(act==="preset"){ S.sel=PRESETS[Number(b.dataset.p)].sel.slice(); save(); render(); return }
+  if(act==="buildmulti"){ newMulti(false); return }
+  if(act==="bf"){ S.bf[b.dataset.k]=b.dataset.v; S.open=""; save(); render(); return }
+  if(act==="expand"){ S.open = (S.open===b.dataset.id) ? "" : b.dataset.id; renderBrowse(); return }
+
+  if(act==="build"){
+    var gv=$("#group").value; if(!gv) return;
+    newSession(gv, !!(S.session && S.session.mode!=="multi" && S.session.group===gv));
+  }
+  if(act==="shuffle" && ses){ ses.mode==="multi" ? newMulti(true) : newSession(ses.group,true) }
+  if(act==="swap" && ses){
+    var r = swapOne(i);
+    if(r){
+      var t=totalTime(ses);
+      notice = "Swapped in " + r.name + ". "
+        + (Math.abs(t-5400)>6*60
+            ? "The session is now about " + mins(t) + " minutes \u2014 adjust sets if that does not fit."
+            : "Session still runs about " + mins(t) + " minutes.");
+      save(); render();
+    }
+  }
+  if(act==="done" && ses){
+    ses.main[i].done = !ses.main[i].done;
+    if(ses.main.filter(function(x){return x.done}).length>=Math.ceil(ses.main.length/2)) commitHistory();
+    save(); render();
+  }
+  if(act==="rest" && ses){ openTimer(ses.main[i].rest) }
+  if(act==="opentimer"){ openTimer(0) }
+  if(act==="closenote"){ notice=null; render() }
+  if(act==="finish" && ses){ commitHistory(); render() }
+  if(act==="theme"){ S.theme = S.theme==="dark"?"light":"dark"; save(); render() }
+
+  if(act==="opendata"){ dmsg=""; renderData(); $("#data").classList.add("on") }
+  if(act==="dclose"){ dmsg=""; $("#data").classList.remove("on"); render() }
+  if(act==="export"){
+    dmsg = exportData()
+      ? "Backup downloaded. Keep it in Drive, Files or anywhere you like \u2014 importing it later restores everything."
+      : "Could not start the download here. Open the file in your own browser and try again.";
+    renderData();
+  }
+  if(act==="wipe"){
+    if(b.dataset.armed){ wipeData(); dmsg="All history and logs cleared."; $("#data").classList.remove("on"); render(); }
+    else { b.dataset.armed="1"; b.textContent="Tap again to confirm"; b.classList.add("danger") }
+  }
+  if(act==="tclose"){ $("#sheet").classList.remove("on") }
+  if(act==="tgo"){ T.on?timerStop():timerStart(); timerPaint() }
+  if(act==="treset"){ timerSet(T.sec) }
+  if(act==="tplus"){ T.left+=15; T.sec=Math.max(T.sec,T.left); timerPaint() }
+});
+
+document.addEventListener("click",function(e){
+  var p=e.target.closest("[data-pre]"); if(!p) return;
+  timerSet(Number(p.dataset.pre));
+});
+
+document.addEventListener("change",function(e){
+  var el=e.target;
+  if(el.id==="group"){ if(el.value) newSession(el.value,false); return }
+  if(el.dataset && el.dataset.log!==undefined){
+    var i=Number(el.dataset.log), s=Number(el.dataset.set), f=Number(el.dataset.f);
+    var it=S.session.main[i];
+    it.log = it.log || [];
+    it.log[s] = it.log[s] || ["",""];
+    it.log[s][f] = el.value;
+    S.logs[byId(it.g,it.id).id] = {d:Date.now(), s:it.log.map(function(r){return r.slice()})};
+    save();
+  }
+});
+
+$("#sheet").addEventListener("click",function(e){
+  if(e.target.id==="sheet") $("#sheet").classList.remove("on");
+});
+$("#data").addEventListener("click",function(e){
+  if(e.target.id==="data"){ dmsg=""; $("#data").classList.remove("on"); render() }
+});
+$("#importfile").addEventListener("change",function(e){
+  var f=e.target.files && e.target.files[0]; if(!f) return;
+  var fr=new FileReader();
+  fr.onload=function(){
+    try{
+      var added = mergeData(JSON.parse(fr.result));
+      dmsg = "Merged. "+added.logs+" exercise log"+(added.logs===1?"":"s")+" and "
+           + added.sessions+" session"+(added.sessions===1?"":"s")+" added.";
+      render();
+    }catch(err){ dmsg="That file could not be read as a backup."; renderData() }
+  };
+  fr.readAsText(f);
+  e.target.value="";
+});
+
+(async function(){
+  await load();
+  render(); timerPaint();
+})();
+</script>
+</body>
+</html>
